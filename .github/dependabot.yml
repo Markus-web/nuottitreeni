@@ -1,9 +1,13 @@
+# Weekly updates, but only for releases at least 14 days old (cooldown): new versions get
+# time to be pulled or fixed upstream before they reach this project.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
     groups:
       build-tools:
         patterns: ["*"]
@@ -11,6 +15,8 @@ updates:
     directory: /tests/browser
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
     groups:
       browser-tests:
         patterns: ["*"]
@@ -18,3 +24,5 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14

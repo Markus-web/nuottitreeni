@@ -294,6 +294,8 @@ h2:focus {
 	border-bottom-color: var(--accent);
 	font-weight: 600;
 }
+/* The connect button appears after load; on narrow screens it may wrap under the status
+   text, so two lines are reserved there and nothing below moves (CLS). */
 .device-row {
 	min-height: calc(var(--target) + 0.5rem);
 	display: flex;
@@ -301,6 +303,12 @@ h2:focus {
 	align-items: center;
 	gap: 0.5rem 1rem;
 	padding-block: 0 0.5rem;
+}
+@media (max-width: 34rem) {
+	.device-row {
+		min-height: calc(2 * var(--target) + 1rem);
+		align-content: flex-start;
+	}
 }
 .device-status {
 	margin: 0;
