@@ -11,15 +11,20 @@ Three layers, from fast to thorough. CI (`.github/workflows/ci.yml`) runs all of
 | `tests/unit/notes.test.mjs` | Note names (letters and the H system), MIDI numbers, spelling |
 | `tests/unit/explain.test.mjs` | Staff positions, the miss explanations and the worked examples ("Example, step by step") in both languages |
 | `tests/unit/content.test.mjs` | Lesson facts recomputed from the staff model, frozen ids, locale parity for every locale file (including the step counts of the "How to practise" boxes), slugs, piece bars and ranges, rhythm answers, worked-example notes that belong to their lesson |
+| `tests/unit/timing.test.mjs` | Timing judgment (on time, early, late, missed, wrong, longest streak) and the piece score |
+| `tests/unit/phrases.test.mjs` | 800 generated phrases: range, moves per level, two full bars, key note at both ends, key signature, the note pool |
+| `tests/unit/transpose.test.mjs` | Every piece in every offered key: the same interval for every note, the key signature kept, no double sharps or flats, the readable direction |
+| `tests/unit/chords.test.mjs` | Every interval, every triad in every inversion on several roots, seventh chords, unknown sets, text in every locale |
 | `tests/unit/keyboard-layout.test.mjs` | Keyboard sizes (each covers its number of keys), the known DGX-205/203 size, playable range with octave shift and transpose |
+| `tests/unit/locale-browser.test.mjs` | The browser's copy of the strings leaves out the build-only texts, and no browser code reads them |
 | `tests/unit/repo-hygiene.test.mjs` | Every translation key is used, every relative Markdown link and `#anchor` resolves, every script in `scripts/` starts with a header comment |
-| `tests/unit/staff.test.mjs` | The SVG staff renderer |
+| `tests/unit/staff.test.mjs` | The SVG staff renderer, two-staff piece scores (bass notes with their own value) and bar numbers |
 | `tests/unit/progress.test.mjs` | Progress format: record, merge, every validation limit |
 | `tests/unit/sync-code.test.mjs` | Code generation, normalization, hashing |
-| `tests/unit/smf-zip-notation.test.mjs` | MIDI file reader and writer, ZIP writer, the compact notation and MusicXML output |
+| `tests/unit/smf-zip-notation.test.mjs` | MIDI file reader and writer, ZIP writer, the compact notation, piece steps with both hands and MusicXML output |
 | `tests/unit/input-parse.test.mjs` | Web MIDI, BLE-MIDI and USB-MIDI parsers, velocity curves, the computer-keyboard map |
 | `tests/unit/i18n.test.mjs` | Lookups, placeholders, number and date formats per locale |
-| `tests/unit/contrast.test.mjs` | Colour tokens in `main.css`: 7:1 text, 3:1 boundaries and focus, the section colours (7:1) and the note colours (3:1 on keys and pages), both themes |
+| `tests/unit/contrast.test.mjs` | Colour tokens in `main.css`: 7:1 text, 3:1 boundaries and focus, the section colours (7:1), the note, hand and finger colours (3:1 on keys and pages), both themes; labels drawn on falling-note bars (4.5:1 with the black-or-white helper) |
 | `tests/unit/copy.test.mjs` | Writing rules (`tests/copy-rules.json`) on UI strings, legal texts and Markdown docs |
 | `tests/unit/pitch.test.mjs` | Microphone pitch detection on synthetic tones (pure and piano-like), noise and silence; the note tracker |
 | `tests/unit/serve.test.mjs` | `scripts/serve.mjs`: headers, folder index, trailing-slash redirect, 404 page, path traversal, sync-off API |
@@ -29,7 +34,11 @@ Three layers, from fast to thorough. CI (`.github/workflows/ci.yml`) runs all of
 
 ## 2. Build: `npm run build`
 
-Fails when the landing page (HTML, CSS, scripts, fonts and the home photo) is over 120 KB compressed, the CSS over 15 KB, or any page's JavaScript over 40 KB.
+Fails when the landing page (HTML, CSS, scripts, fonts and the home photo) is over 120 KB compressed, the CSS over 15 KB, or any page's JavaScript over 40 KB (its entry and static imports; chunks loaded with `import()` do not count). The report line names the largest page script (`maxPageJs`); the piece page is the one to watch.
+
+## Everything at once
+
+`npm run check` runs the unit tests, the build, a dry-run deploy and the browser suite, as CI does. `npm run check:fresh` (`scripts/check-fresh.mjs`) runs `npm ci`, `npm audit` for both package sets and `npm run check` in a fresh temporary copy of the files Git tracks plus new files that are not ignored, so nothing that exists only on your computer can hide a problem. Add `-- --keep` to keep the copy.
 
 ## 3. Browser suite: `npm run test:browser`
 
@@ -46,13 +55,13 @@ Parts (`--only` takes a comma-separated list):
 
 | Part | What |
 |---|---|
-| `flows` | The header (four tasks, one connect button, the rest in the footer, the "How to start" link); Web MIDI permission states (granted, denied, unsupported: the button offers the microphone) and unplugging a keyboard; the keyboard size and the range warning on a piece; the stream link builder; the "How to practise" box (open on the first visit only); note colours; the restart button on pieces; the Bluetooth and USB adapters, MIDI monitor and device report with fake devices; a drill with a miss and a full round, a round with the computer keyboard only, row and ear modes; a rhythm quiz and a tap round; a piece in wait mode; importing MIDI, MusicXML and MXL; a recording and its download; export and import with merge; a sync code linking two browsers and deleting the server copy; offline use; the stream page; free practice with the keyboard only (name buttons, a hint); note names, fingering, falling notes and the print view on a piece; the microphone with a fake 440 Hz tone; the PWA (Chromium's installability check, the manifest, every file cached, new pages, a piano sample and a photo offline). Revision conflicts are covered by the Worker tests |
-| `aaa` | The WCAG 2.2 AAA matrix: each page type in both languages, dark and light, at 320 and 1280 pixels (paths ending in `#note-colors` with note colours and falling notes on): axe (A, AA, AAA, best practices), target sizes, focus rings, skip link, headings, reflow, text spacing, animations, design rules, broken text ("null", "undefined", `{placeholder}`), key marks drawn twice, console errors and CSP violations; plus a drill in forced colours |
+| `flows` | The note explorer (names, both spellings, interval, chord and inversion); a phrase round with the keyboard only; play-along sending the bass to a fake MIDI output; Listen through the output and Stop; tempo-mode summary, score, history and the card status; the bar strip; transposing and back; speed reading (right answers, three misses); wake lock and full screen; key lights on a channel; colours by finger, the 1.2.0 setting, black-key names; control keys taught and used; falling-note labels; the header (four tasks, one connect button, the rest in the footer, the "How to start" link); Web MIDI permission states (granted, denied, unsupported: the button offers the microphone) and unplugging a keyboard; the keyboard size and the range warning on a piece; the stream link builder; the "How to practise" box (open on the first visit only); note colours; the restart button on pieces; the Bluetooth and USB adapters, MIDI monitor and device report with fake devices; a drill with a miss and a full round, a round with the computer keyboard only, row and ear modes; a rhythm quiz and a tap round; a piece in wait mode; importing MIDI, MusicXML and MXL; a recording and its download; export and import with merge; a sync code linking two browsers and deleting the server copy; offline use; the stream page; free practice with the keyboard only (name buttons, a hint); note names, fingering, falling notes and the print view on a piece; the microphone with a fake 440 Hz tone; the PWA (Chromium's installability check, the manifest, every file cached, new pages, a piano sample and a photo offline). Revision conflicts are covered by the Worker tests |
+| `aaa` | The WCAG 2.2 AAA matrix: each page type in both languages, dark and light, at 320 and 1280 pixels (paths ending in `#note-colors`, `#finger-colors` or `#black-names` run with those settings on, see `SETTINGS_BY_HASH` in `run.mjs`): axe (A, AA, AAA, best practices), target sizes, focus rings, skip link, headings, reflow, text spacing, animations, design rules, broken text ("null", "undefined", `{placeholder}`), key marks drawn twice, console errors and CSP violations; plus a drill in forced colours |
 | `seo` | Crawl of `dist/`: titles, descriptions, canonical, reciprocal `hreflang`, JSON-LD, broken links, sitemap, robots, `llms.txt` (`scripts/check-seo.mjs`) |
-| `lighthouse` | Mobile and desktop on five pages: Performance at least 95, the other categories 100, LCP at most 1.8 s, CLS at most 0.02, TBT at most 100 ms. A page is run once more when Lighthouse itself reports a runtime error (a flaky CI runner, not a slow page); the error is printed |
+| `lighthouse` | Mobile and desktop on five pages: Performance at least 95, the other categories 100, LCP at most 1.8 s, CLS at most 0.02, TBT at most 100 ms. A page is run once more when Lighthouse itself reports a runtime error (a flaky CI runner, not a slow page); the error is printed. A page that misses a budget gets its full report saved as `tests/browser/artifacts/lighthouse-<form factor>-<page>.json` (open it in the Lighthouse viewer; `lcp-breakdown-insight` names the largest element) |
 | `template` | A build with the deploy-button defaults: English first, `noindex`, operator read from `/api/config` |
 
-Results and screenshots go to `tests/browser/artifacts/` (ignored by Git). Add `--no-build` to reuse the current test build, and `--grep <text>` to run only the flows and AAA pages whose name contains the text (while fixing something).
+Results and screenshots go to `tests/browser/artifacts/` (ignored by Git). Add `--no-build` to reuse the current test build, and `--grep <text>` to run only the flows and AAA pages whose name contains the text (while fixing something). A failed flow also prints the first console errors of its pages, which usually say why it timed out.
 
 For a visual review, `node tests/browser/shots.mjs` saves full-page screenshots of the main pages (both themes, 320 and 1280 pixels) to `tests/browser/artifacts/review/`; pass paths, `--widths` and `--themes` to choose. `--top` or `--bottom` saves only the first or last screenful (header or footer review) and `--settings '{"noteColors":true}'` turns settings on first. The README screenshot (`docs/images/home.png`) is `node tests/browser/shots.mjs --top --height 840 --widths 1280 --themes dark /en/`, copied from `tests/browser/artifacts/review/_en_-dark-1280.png`.
 

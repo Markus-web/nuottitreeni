@@ -4,6 +4,99 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-04
+
+New practice modes and piece tools, with ideas from three other piano trainers: sightread (GPL-3.0), Synthesia (commercial) and Midiano. Only ideas were taken. Everything is written from scratch for this MIT project, with its own tests ([decision 0012](docs/decisions/0012-features-from-other-trainers.md)). Two audit findings are fixed as well.
+
+### Added
+
+**New pages**
+- **Phrases** (`/fraasit/`, `/en/phrases/`): short generated tunes, read and played like a note row.
+  - Two bars of 4/4, mostly by step, starting and ending on the key note.
+  - Four levels: steps between C4 and G4; then thirds and half notes; then fourths, or the bass clef; then both staffs and C, G and F major.
+  - A round is five phrases, with misses explained and hints as in the lessons. The results are saved under new lesson ids `phrases-1` to `phrases-4`.
+  - Idea: sightread's phrase training. Random note rows are hard to read as music; phrases move like real tunes.
+- **Speed reading** (`/pikaluku/`, `/en/speed-reading/`): an optional timed game.
+  - Every right answer shortens the time for the next note by 10 %. A miss or a timeout lengthens it and costs one of three tries.
+  - Choose the clef, the range, the key signature and the start time (6, 4 or 2 s). Pause and Stop at any time.
+  - The best notes per minute per clef are kept in this browser only.
+  - Idea: sightread's speed training.
+- **Explore notes** (`/tutki-nuotteja/`, `/en/explore-notes/`): play any key and see the note on a grand staff.
+  - It shows the name, both spellings for black keys (Cis / Des) and the same tested explanation as in the drills.
+  - Two notes give the interval ("suuri terssi"). Three or four give the chord with its inversion ("C-duuri, 1. käännös"): major, minor, diminished and augmented triads, and dominant, major and minor seventh chords.
+  - Ideas: sightread's free play and Synthesia's chord labels.
+- **More practice** on the home page and in the footer: free practice, phrases, speed reading and explore notes, in the free-practice colour. Phrases is also a shortcut in the installed app.
+
+**Pieces**
+- **Bass lines** for Ukko Nooa, Maijalla oli karitsa and Oodi ilolle: simple root notes in half and whole notes, on a two-staff score.
+- **Play-along**: practise one hand and the app plays the other, in wait mode with your steps and in tempo mode with the metronome. It works for imported two-hand files too. Idea: sightread and Synthesia.
+- **Another key**: built-in pieces can be played in any major or minor key with up to three sharps or flats.
+  - The score, steps, text version and caption follow the key, and the choice is remembered per piece.
+  - The transposer picks the direction that needs fewer ledger lines, so Ukko Nooa in G major goes up a fifth onto the staff instead of down below it. Idea: sightread.
+- **Speed buttons**: 50 %, 75 % and 100 % of a suggested tempo for every piece. The slider stays for fine control and starts at 75 %.
+- **Timing feedback** in tempo mode: how many notes were on time, early, late or missed, the wrong notes and the longest run on time. Idea: sightread's session stats.
+- **Score and history**: every run gets a score from 0 to 100, and the last 10 runs of each piece are listed on its page. The page explains how the score works.
+  - The history is stored only in this browser (`nt.v1.pieceRuns`) and is not synced.
+  - Idea: Synthesia's progress scores.
+- **Bar strip**: a button per bar. Press the first and the last bar to choose what to practise; the bar fields follow. Ideas: sightread's timeline and Midiano's loops.
+- **Bar numbers** at the start of every score line. Idea: Midiano.
+- **Labels on falling notes**: note names or finger numbers inside the bars, in black or white, whichever reads better on the bar's colour. Idea: Synthesia.
+- **Full screen** for piece and drill pages: the practice area fills the screen (Esc returns). Not shown where the browser cannot do it. Idea: Midiano.
+
+**Devices and display**
+- **Colours by hand or finger**: the note colours setting is now a choice of off, by note name, by hand (right blue, left orange) or by finger (1 to 5), on the keys, the next-key marks and the falling notes. Two-hand pieces colour the falling notes by hand by default. Idea: Midiano.
+- **Names on black keys** (setting, off by default), in the ♯ spelling, or ♭ in flat keys. Idea: Midiano.
+- **Control keys** (Devices page, per instrument): teach two keys of your keyboard to start or stop practice and to start over, so you never leave the instrument. While set, those keys do not play in the exercises. They work on pieces, in rhythm tapping and in speed reading. Idea: Midiano.
+- **Key lights** (experimental): keyboards with lighted keys can show the next notes of a piece, on a MIDI channel you choose, with a test button. Drills do not use it, because a lit key would give the answer away. Not yet tried with a real lighted keyboard. Idea: Synthesia.
+- **The screen stays on** while an exercise runs (Screen Wake Lock), so a tablet on the music stand does not dim; a switch in Settings turns it off. Idea: sightread.
+- **Run counter** in every drill: how many notes in a row were right, and the longest run in the round summary.
+- **Glossary**: new entries for interval, chord, triad and inversion, the terms the explorer uses.
+
+### Changed
+
+- The piece page loads the falling notes, the transposer and the MIDI and MusicXML readers only when they are used, so its script stays under the 40 KB budget with all the new tools.
+- **Faster first paint.** With the two-staff score, Ukko Nooa's largest paint had reached 1.83 s on Lighthouse's mobile run (budget 1.8 s). Two changes fixed it for every page:
+  - Each page's language strings now reach the browser without the texts only the build uses (help answers, glossary, lesson explanations and descriptions, URL slugs, static page texts; `src/content/locale-browser.js`, guarded by `tests/unit/locale-browser.test.mjs`). The Finnish strings went from 18.6 to 12.1 KB, the English from 17.0 to 11.1 KB, and the home page's first load from 73.7 to 67.8 KB.
+  - Page scripts start one frame after the first paint: the small theme script that already runs first adds the module script and its preloads (`data-entry`, `data-preload`). Everything visible is in the HTML, so the stylesheet and the fonts get the network first.
+  - Result on Lighthouse's mobile run: the largest paint is now about 1.2 s on every budget page (Ukko Nooa 1.21 s instead of 1.83 s), layout shift 0, blocking time at most 42 ms; performance 100 everywhere (the home page had been 99).
+- `Permissions-Policy` allows `screen-wake-lock` and `fullscreen` for the site itself.
+- The rhythm tap uses the same timing judgment as the pieces (`src/core/timing.js`).
+- A fieldset can no longer be widened by a long select, which made pages scroll sideways on phones with the new colour choice.
+
+### Fixed
+
+- **Piece results were saved but never shown.** Every finished run was recorded (times played, fewest wrong notes), but nothing displayed it. Piece cards on the Pieces page and the home page now show it.
+- **The MIDI output did nothing for pieces.** "Output (sound to the instrument)" on the Devices page was used only by the ear drill; Listen never reached the instrument. All app playback now goes there too, and Stop silences it. The player's own notes are never echoed back.
+
+### Developer
+
+- **New pure modules with tests:**
+  - `src/core/phrases.js`, `chords.js`, `transpose.js`, `timing.js`, `piece-text.js`, `color.js`
+  - `pieceSteps()` and two-staff `systems()` in `notation.js`
+  - `describeNote()` in `notes.js`
+  - `controlAction()` in the input hub
+  - per-note values and `barNumber` in the staff renderer
+- **New browser helpers:** `src/core/wake-lock.js`, `src/core/key-lights.js`, `src/pages/fullscreen.js`.
+- **Unit tests:**
+  - new: `timing.test.mjs`, `phrases.test.mjs` (800 generated phrases), `transpose.test.mjs` (every piece in every key), `chords.test.mjs`
+  - additions to the content, staff, notation, notes, contrast, headers and input tests
+- **Browser suite:**
+  - a flow for every new feature
+  - the fakes record wake-lock requests and full-screen calls
+  - the AAA matrix covers the new pages and settings combinations (`SETTINGS_BY_HASH`)
+  - a failed flow prints its pages' console errors; a page that misses a Lighthouse budget gets its full report saved
+- **Tools:** `npm run check:fresh` (`scripts/check-fresh.mjs`) runs `npm audit` and the whole gate in a fresh copy of the project; the build report names the largest page script (`maxPageJs`).
+
+### Docs
+
+- Decision 0012.
+- Updated:
+  - README in both languages
+  - `docs/architecture.md`, `docs/adding-pieces.md` (bass lines, tempo, transposition), `docs/devices.md` (MIDI output playback, control keys, key lights, wake lock), `docs/api.md` (new lesson ids), `docs/privacy-design.md`, `docs/testing.md`
+  - `PRIVACY.md` and the privacy notice (the piece history)
+  - ACCESSIBILITY.md and the accessibility statement in the app (speed reading as an optional timed game)
+  - `AGENTS.md` (contracts, the script budget, ideas-only rule)
+
 ## [1.2.1] - 2026-11-03
 
 Fixes from a second audit pass after 1.2.0.
@@ -142,7 +235,8 @@ First public release.
 - Phosphor icons in the menu and on buttons, and four photos from Unsplash with credits under each photo.
 - Deploy to Cloudflare button, documentation for self-hosting, and a test suite (unit, Worker API, browser flows, AAA matrix, SEO crawl, Lighthouse budgets).
 
-[Unreleased]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/Markus-web/nuottitreeni/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Markus-web/nuottitreeni/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Markus-web/nuottitreeni/compare/v1.0.0...v1.1.0

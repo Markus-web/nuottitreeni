@@ -60,6 +60,14 @@
 	--n-g: #1e74d6;
 	--n-a: #5b5fd6;
 	--n-b: #a542c4;
+	/* Hand and finger colours (the same colour setting, "hands" or "fingers"), same 3:1 rules. */
+	--hand-right: #1e74d6;
+	--hand-left: #c45f00;
+	--f-1: #e53935;
+	--f-2: #c45f00;
+	--f-3: #2e8b3e;
+	--f-4: #1e74d6;
+	--f-5: #a542c4;
 	--font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
 	--font-heading: "Space Grotesk", var(--font-body);
 	--font-music: "NT Music", "Noto Music", "Bravura", serif;
@@ -519,6 +527,8 @@ fieldset {
 	padding: 0.75rem 1rem 0.5rem;
 	margin: 0 0 1.5rem;
 	max-width: var(--measure);
+	/* A fieldset is as wide as its widest content by default; a long select would widen the page. */
+	min-width: 0;
 }
 legend {
 	font-weight: 600;
@@ -595,6 +605,7 @@ summary {
 .card .status {
 	color: var(--muted);
 	font-size: 0.95rem;
+	min-height: 1.6em;
 }
 .card .status[data-done="true"] {
 	color: var(--ok);
@@ -695,6 +706,59 @@ summary {
 }
 .worked-steps li + li {
 	margin-top: 0.25rem;
+}
+
+/* Bar strip on piece pages: one button per bar; the chosen bars are pressed (aria-pressed). */
+.bar-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	margin: 0.25rem 0 1rem;
+	max-width: var(--measure);
+}
+.bar-button {
+	min-width: var(--target);
+	min-height: var(--target);
+	border: 1px solid var(--rule);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+.bar-button[aria-pressed="true"] {
+	background: var(--section);
+	border-color: var(--section);
+	color: var(--bg);
+}
+
+/* Speed reading: the time left as a bar (hidden with reduced motion, then seconds as text). */
+.speed-bar {
+	height: 0.5rem;
+	border: 1px solid var(--rule);
+	background: var(--surface);
+	margin: 0.5rem 0;
+	max-width: var(--measure);
+}
+.speed-bar-fill {
+	height: 100%;
+	width: 100%;
+	background: var(--section);
+}
+
+/* Note explorer: the names of the played notes, large enough to read from the instrument. */
+.explore-names {
+	font-family: var(--font-heading);
+	font-size: 1.6rem;
+	font-weight: 700;
+	min-height: 2.6rem;
+}
+
+/* Full-screen practice (pages/fullscreen.js): the main area scrolls on the page colour. */
+main:fullscreen {
+	overflow: auto;
+	background: var(--bg);
+	padding: 1rem;
 }
 
 /* Guide */
@@ -873,6 +937,10 @@ summary {
 	font-size: 28px;
 	fill: var(--text);
 }
+.st-barnum {
+	font: 600 13px var(--font-body);
+	fill: var(--muted);
+}
 .st-label {
 	font-family: var(--font-heading);
 	font-weight: 700;
@@ -1003,13 +1071,47 @@ summary {
 .key:focus-visible {
 	z-index: 2;
 }
-/* Note colours (setting, off by default): a band at the foot of each white key and under each
-   name answer. The names stay, so colour is never the only cue (1.4.1). */
-[data-note-colors] .key-white[data-step] {
+/* Colours (setting, off by default): by note name a band at the foot of each white key and
+   under each name answer; by hand or by finger a band on the marked next keys (data-hand,
+   data-finger from the piece page). The names stay, so colour is never the only cue (1.4.1). */
+[data-note-colors="names"] .key-white[data-step] {
 	box-shadow: inset 0 -0.35rem 0 var(--note);
 }
-[data-note-colors] .answers .answer[data-step][data-alter="0"] {
+[data-note-colors="names"] .answers .answer[data-step][data-alter="0"] {
 	border-bottom: 0.3rem solid var(--note);
+}
+[data-note-colors="hands"] .key.is-target[data-hand],
+[data-note-colors="fingers"] .key.is-target[data-finger] {
+	box-shadow: inset 0 -0.45rem 0 var(--note);
+}
+[data-hand="right"] {
+	--note: var(--hand-right);
+}
+[data-hand="left"] {
+	--note: var(--hand-left);
+}
+[data-finger="1"] {
+	--note: var(--f-1);
+}
+[data-finger="2"] {
+	--note: var(--f-2);
+}
+[data-finger="3"] {
+	--note: var(--f-3);
+}
+[data-finger="4"] {
+	--note: var(--f-4);
+}
+[data-finger="5"] {
+	--note: var(--f-5);
+}
+/* Names on black keys: in the page, shown only with the setting on. */
+.key-black .key-name {
+	display: none;
+	font-size: 0.75rem;
+}
+[data-black-names] .key-black .key-name {
+	display: block;
 }
 [data-step="C"] {
 	--note: var(--n-c);

@@ -27,6 +27,9 @@ export const PERMISSIONS_POLICY = [
 	"midi=(self)",
 	"usb=(self)",
 	"microphone=(self)",
+	// Keeping the screen on during practice, and the full-screen practice view.
+	"screen-wake-lock=(self)",
+	"fullscreen=(self)",
 	"camera=()",
 	"geolocation=()",
 	"payment=()",

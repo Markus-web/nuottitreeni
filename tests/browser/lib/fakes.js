@@ -4,6 +4,9 @@
 //   window.__fakeBle.packet([bytes])      after the page connected to "Fake BLE Piano"
 //   window.__fakeUsb.packet([bytes])      after the page connected to "Fake USB Piano"
 //   microphone: getUserMedia returns a sine tone at window.__fakeMicHz (default 440 Hz, A4)
+//   window.__fakeWake.log    wake lock requests and releases ("request", "release")
+//   window.__fakeFullscreen  elements that asked for full screen (requestFullscreen is stubbed)
+//   window.__fakeMidi.sent   every message sent to the fake MIDI output
 // mode: "granted" (permission already given, auto-connects), "prompt", "denied", "unsupported"
 
 export function fakeDevices(mode) {
@@ -119,6 +122,32 @@ export function fakeDevices(mode) {
 				w({ data: new DataView(new Uint8Array(bytes).buffer) });
 			} else queue.push(bytes);
 		},
+	};
+	// Screen Wake Lock: records requests and releases.
+	const wakeLog = [];
+	window.__fakeWake = { log: wakeLog };
+	Object.defineProperty(navigator, "wakeLock", {
+		configurable: true,
+		value: {
+			request: async () => {
+				wakeLog.push("request");
+				const listeners = [];
+				return {
+					released: false,
+					addEventListener: (type, fn) => type === "release" && listeners.push(fn),
+					release: async () => {
+						wakeLog.push("release");
+						for (const fn of listeners) fn();
+					},
+				};
+			},
+		},
+	});
+	// Full screen: headless Chromium may refuse it, so record the request instead.
+	window.__fakeFullscreen = [];
+	Object.defineProperty(document, "fullscreenEnabled", { configurable: true, get: () => true });
+	Element.prototype.requestFullscreen = async function () {
+		window.__fakeFullscreen.push(this.tagName.toLowerCase());
 	};
 	// A "microphone" that hears a steady tone, made with Web Audio inside the page.
 	if (navigator.mediaDevices) {

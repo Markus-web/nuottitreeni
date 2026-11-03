@@ -44,6 +44,7 @@ node tests/browser/run.mjs --only flows,aaa    # browser flows and the AAA matri
 node tests/browser/run.mjs --only flows,aaa --grep laitteet   # only matching flows and pages
 node tests/browser/shots.mjs                   # screenshots in tests/browser/artifacts/review/ (--top, --bottom, --settings)
 npm run check                                  # everything CI runs
+npm run check:fresh                            # the same in a fresh copy (tracked + new files), plus npm audit
 ```
 
 ## Contracts
@@ -52,13 +53,14 @@ All **stable**: a breaking change needs a major version, a migration and a CHANG
 
 - Ids in `src/content/catalog.js` (lessons, rhythm lessons, pieces, modes) are stored in users' progress and on sync servers. Never rename or remove one; add a new id (`tests/unit/content.test.mjs` guards them).
 - Storage keys `nt.v1.*` and the IndexedDB `nuottitreeni` stores (`src/core/store.js`, listed in [docs/privacy-design.md](docs/privacy-design.md)).
-- Progress format v1 and its limits (`src/core/progress.js`), validated by both the browser and the Worker. The lesson id `free` (free practice) and the mode `name` were added in 1.1.0.
-- Settings and per-device settings keep their names; new ones get defaults in `src/core/store.js` (1.2.0 added `noteColors`, `seenHelp` and the device `keys`).
+- Progress format v1 and its limits (`src/core/progress.js`), validated by both the browser and the Worker. The lesson id `free` (free practice) and the mode `name` were added in 1.1.0, the lesson ids `phrases-1` to `phrases-4` in 1.3.0.
+- Settings and per-device settings keep their names; new ones get defaults in `src/core/store.js` (1.2.0 added `noteColors`, `seenHelp` and the device `keys`; 1.3.0 made `noteColors` a choice, with `true` read as "names", and added `namesOnBlackKeys`, `fallingLabels`, `playAlong`, `pieceKeys`, `wakeLock`, `keyLights`, `speed`, `speedBest`, `phrases`, `exploreSpelling` and the device `controlKeys`).
+- The browser-only piece history `nt.v1.pieceRuns` (last 10 runs per piece; never synced).
 - The sync API and error codes in [docs/api.md](docs/api.md), and the sync code format (`src/core/sync-code.js`).
 - URL slugs in the locale files (`slugs`): public links and search results.
 - Build variables and runtime variables in [docs/configuration.md](docs/configuration.md); self-hosters rely on their names.
 
-The Bluetooth LE MIDI, USB vendor-mode and microphone inputs are **experimental** and may change without migration.
+The Bluetooth LE MIDI, USB vendor-mode and microphone inputs, key lights and control keys are **experimental** and may change without migration.
 
 ## Do not
 
@@ -68,6 +70,10 @@ The Bluetooth LE MIDI, USB vendor-mode and microphone inputs are **experimental*
 - Do not leave a translation key unused (`tests/unit/repo-hygiene.test.mjs`): finish the feature or remove the key.
 - Do not push to `main`: every change is a pull request that merges after CI ([decision 0011](docs/decisions/0011-stable-main.md)).
 - Do not add a practice mode without its "How to practise" steps (`howto` in the locale files) and a test that names its buttons the same way.
+- Do not copy code, assets or texts from other piano apps; take ideas only ([decision 0012](docs/decisions/0012-features-from-other-trainers.md)). sightread is GPL-3.0 and cannot be mixed into this MIT code.
+- Do not push the piece page script past its 40 KB budget: load rarely used parts with `import()` (falling notes, the transposer and the file readers already do).
+- Do not put a `<script type="module">` in the page HTML: the theme script starts each page's entry after the first paint (`data-entry` in `src/templates/layout.js`, `src/pages/theme-init.js`; a build test checks it).
+- Do not read a build-only string (help, glossary, lesson `learn` and `description`, slugs, static page texts) from browser code: the browser's copy leaves them out (`src/content/locale-browser.js`; the test fails if you do). If a page needs one, take it out of the build-only list.
 - Do not add inline styles or scripts (the CSP blocks them), runtime dependencies or requests to other origins.
 - Do not edit generated files by hand: `src/content/icons.js` (`npm run vendor:icons`), `src/assets/photos/` (`npm run build:photos`), fonts, samples, OG images, the vendored notation engine.
 - Do not commit `.dev.vars`, real database ids, account ids or tokens. `wrangler.jsonc` keeps placeholder values for the Deploy button.

@@ -57,6 +57,22 @@ Turn it on with **Use the microphone** on the Devices page. In browsers without 
 
 Tips: one note at a time, a quiet room, the device near the instrument. A note must hold for about 80 ms before it counts; striking the same key again is recognised when the sound gets clearly louder. Chords and very low notes (below about B1) are not recognised. The detector is in `src/core/pitch.js` with tests in `tests/unit/pitch.test.mjs`.
 
+## Sound on the instrument (MIDI output)
+
+When an output is chosen on the Devices page ("Output, sound to the instrument"), the app's own playback goes there too: Listen on a piece, the other hand in play-along, and the note in the ear drill. Your own playing is never sent back. If you hear everything twice, turn off the app's piano sound in Settings or use only one of them.
+
+## Control keys
+
+Each instrument can have two control keys (Devices page, Device settings, "Choose control keys"): press the key that should start and stop practice, then the one that should start over. The two lowest keys are a good choice. While they are set, those keys do not play notes in the exercises. They work on piece pages, in rhythm tapping and in speed reading. "Remove the control keys" gives the keys back.
+
+## Key lights (experimental)
+
+Keyboards with lighted keys can show the next notes of a piece. Turn on "Light the next keys" under the MIDI output and choose the MIDI channel your keyboard uses for its lights (makers differ; the test button lights C4 for a second). The app sends note-on with velocity 1 for the next notes and note-off when they pass, and all lights go off when you stop. Only pieces use it: in the reading drills a lit key would give the answer away. This has not been tested with a real lighted keyboard yet, so a device report helps.
+
+## Screen stays on
+
+While an exercise runs (a drill round, a piece, Listen, rhythm tapping, speed reading) the app asks the browser to keep the screen on (Screen Wake Lock), so a tablet on the music stand does not dim. The lock ends when you stop or the exercise ends; Settings has a switch to turn this off.
+
 ## Device reports
 
 The Devices page builds a report with the device names, makers and the kinds of messages seen (nothing personal). Paste it into a [device report](https://github.com/Markus-web/nuottitreeni/issues/new?template=device-report.yml) so others know what works. Reports for the experimental Bluetooth and USB paths are especially useful, because they cannot be tested without the hardware.

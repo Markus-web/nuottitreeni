@@ -24,7 +24,7 @@ function walk(dir, filter, out = []) {
 
 // Keys read through a computed path (t(`modes.${m}.label`), dict.lessons[id], ...). Every
 // key under these prefixes counts as used; the content tests check their parity instead.
-const DYNAMIC = ["meta.", "slugs.", "lessons.", "rhythm.", "piecesMeta.", "modes.", "keySigNames.", "theme.", "free.clef.", "settings.noteNamesOptions.", "explain.", "piece.values.", "piece.keyMajor.", "piece.keyMinor.", "photos.", "glossary", "help", "about.body", "device.status", "site.", "notFound.", "howto."];
+const DYNAMIC = ["meta.", "slugs.", "lessons.", "rhythm.", "piecesMeta.", "modes.", "keySigNames.", "theme.", "free.clef.", "settings.noteNamesOptions.", "explain.", "piece.values.", "piece.keyMajor.", "piece.keyMinor.", "photos.", "glossary", "help", "about.body", "device.status", "site.", "notFound.", "howto.", "settings.noteColorsOptions.", "piece.fallingLabelsOptions.", "chords.intervals.", "chords.quality.", "chords.inversions", "explore.spelling.", "phrases.levels."];
 
 test("every translation key is used somewhere in the code", () => {
 	const keys = [];

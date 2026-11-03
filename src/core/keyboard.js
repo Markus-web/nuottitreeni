@@ -3,7 +3,7 @@
 // group has focus, the computer keyboard plays notes by physical key position (QWERTY_MAP),
 // Z/X shift the octave; nothing listens globally (WCAG 2.1.4). Marks use a symbol and text as
 // well as colour (1.4.1). Emits "key" events: { midi, on }.
-import { layoutKeys, whiteKeyName } from "./keyboard-layout.js";
+import { blackName, layoutKeys, whiteKeyName } from "./keyboard-layout.js";
 import { QWERTY_MAP, QWERTY_OCTAVE_DOWN, QWERTY_OCTAVE_UP } from "./input/parse.js";
 import { MIDDLE_C, blackKeyName, isBlackKey, midiLabel } from "./notes.js";
 
@@ -18,6 +18,8 @@ export class PianoKeyboard extends EventTarget {
 		this.noteNames = opts.noteNames;
 		this.interactive = opts.interactive !== false;
 		this.names = opts.names !== false;
+		// Spelling of black-key names ("sharp" or "flat"); shown when the setting is on (CSS).
+		this.prefer = opts.prefer === "flat" ? "flat" : "sharp";
 		this.id = opts.id || "kbd";
 		this.marks = new Map();
 		this.pressed = new Set();
@@ -69,13 +71,13 @@ export class PianoKeyboard extends EventTarget {
 			mark.className = "key-mark";
 			mark.setAttribute("aria-hidden", "true");
 			el.append(mark);
-			if (!k.black) {
-				const name = document.createElement("span");
-				name.className = "key-name";
-				name.setAttribute("aria-hidden", "true");
-				name.textContent = whiteKeyName(k.midi, this.noteNames);
-				el.append(name);
-			}
+			// White keys always carry their name; black keys only when the black-key names
+			// setting is on ([data-black-names] on <html>, see main.css).
+			const name = document.createElement("span");
+			name.className = "key-name";
+			name.setAttribute("aria-hidden", "true");
+			name.textContent = k.black ? blackName(k.midi, this.prefer, this.noteNames) : whiteKeyName(k.midi, this.noteNames);
+			el.append(name);
 			if (k.midi === MIDDLE_C) {
 				const dot = document.createElement("span");
 				dot.className = "key-c4";
@@ -214,10 +216,17 @@ export class PianoKeyboard extends EventTarget {
 		this.buttons?.get(midi)?.classList.toggle("is-on", on);
 	}
 
-	mark(midi, state) {
+	/** Mark a key ("target" or "wrong"); `extra` adds { hand, finger } for the colour modes. */
+	mark(midi, state, extra = {}) {
 		if (state) this.marks.set(midi, state);
 		else this.marks.delete(midi);
 		this.applyMark(midi, state);
+		const el = this.buttons?.get(midi);
+		if (!el) return;
+		for (const k of ["hand", "finger"]) {
+			if (state && extra[k] != null) el.dataset[k] = String(extra[k]);
+			else delete el.dataset[k];
+		}
 	}
 
 	applyMark(midi, state) {

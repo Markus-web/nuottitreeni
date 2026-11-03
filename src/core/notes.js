@@ -109,3 +109,13 @@ export function whiteRange(from, to) {
 	for (let d = diatonic(a); d <= diatonic(b); d++) out.push({ step: STEPS[d % 7], alter: 0, octave: Math.floor(d / 7) });
 	return out;
 }
+
+/**
+ * A played key as a staff note: { step, alter, octave, clef, written }. Middle C and higher go
+ * on the treble staff, lower notes on the bass staff; black keys are spelled with `prefer`
+ * ("sharp" or "flat") and get their sign written.
+ */
+export function describeNote(midi, prefer = "sharp") {
+	const n = spellMidi(midi, prefer);
+	return { ...n, clef: midi >= MIDDLE_C ? "treble" : "bass", written: n.alter || null };
+}

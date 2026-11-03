@@ -3,6 +3,7 @@ import { PITCH_LESSONS, RHYTHM_LESSONS, UNLOCK_PCT } from "../content/catalog.js
 import { aggregate, practiceSummary } from "../core/progress.js";
 import { getProgress } from "../core/store.js";
 import { boot } from "./common.js";
+import { renderPieceStatuses } from "./piece-status.js";
 
 const ctx = await boot();
 const { t, f } = ctx;
@@ -33,6 +34,7 @@ function render() {
 	const summary = document.getElementById("practice-summary");
 	if (summary && (p.weekSec > 0 || Object.keys(agg.lessons).length))
 		summary.textContent = t("home.practiceLine", { today: f.minutes(p.todaySec), week: f.minutes(p.weekSec), streak: p.streak });
+	renderPieceStatuses(ctx);
 }
 
 render();

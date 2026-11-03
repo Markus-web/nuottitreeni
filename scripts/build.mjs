@@ -81,8 +81,20 @@ rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
 // ---- JavaScript -----------------------------------------------------------------------
-const ENTRIES = ["home", "guide", "practice", "rhythm", "pieces", "piece", "log", "devices", "settings", "stream", "static"];
+const ENTRIES = ["home", "guide", "practice", "rhythm", "pieces", "piece", "log", "devices", "settings", "stream", "static", "explore", "speed"];
+const { browserLocale } = await import("../src/content/locale-browser.js");
+// Locale files reach the browser without the texts only the build uses (src/content/locale-browser.js).
+const browserLocales = {
+	name: "browser-locales",
+	setup(b) {
+		b.onLoad({ filter: /[\\/]src[\\/]content[\\/]locales[\\/][a-z]+\.js$/ }, async (args) => {
+			const { default: dict } = await import(`${pathToFileURL(args.path).href}?v=${Date.now()}`);
+			return { contents: `export default ${JSON.stringify(browserLocale(dict))};`, loader: "js" };
+		});
+	},
+};
 const js = await esbuild.build({
+	plugins: [browserLocales],
 	entryPoints: Object.fromEntries(ENTRIES.map((e) => [e, join(src, "pages", `${e}.js`)])),
 	bundle: true,
 	splitting: true,
@@ -175,7 +187,7 @@ const assets = { css: cssUrl, themeJs, preloadFonts, entries, localeChunks, icon
 const paths = {};
 for (const l of locales) {
 	paths[l] = { lesson: {}, rhythm: {}, piece: {} };
-	for (const k of ["home", "practice", "freePractice", "rhythmPractice", "pieces", "myPiece", "log", "devices", "settings", "glossary", "help", "about", "privacy", "accessibility", "licenses", "stream"]) paths[l][k] = site.path(k, l);
+	for (const k of ["home", "practice", "freePractice", "phrases", "speed", "explore", "rhythmPractice", "pieces", "myPiece", "log", "devices", "settings", "glossary", "help", "about", "privacy", "accessibility", "licenses", "stream"]) paths[l][k] = site.path(k, l);
 	for (const x of PITCH_LESSONS) paths[l].lesson[x.id] = site.path("lesson", l, x.id);
 	for (const x of RHYTHM_LESSONS) paths[l].rhythm[x.id] = site.path("rhythm", l, x.id);
 	for (const x of PIECES) paths[l].piece[x.id] = site.path("piece", l, x.id);
@@ -191,6 +203,9 @@ for (const loc of locales) {
 		...RHYTHM_LESSONS.map((r, i) => ["rhythm", P.rhythmPage(ctx, r, i)]),
 		["practice", P.practicePage(ctx)],
 		["freePractice", P.freePracticePage(ctx)],
+		["phrases", P.phrasesPage(ctx)],
+		["speed", P.speedPage(ctx)],
+		["explore", P.explorePage(ctx)],
 		["rhythmPractice", P.rhythmPracticePage(ctx)],
 		["pieces", P.piecesPage(ctx)],
 		...PIECES.map((p) => ["piece", P.piecePage(ctx, p)]),
@@ -285,6 +300,7 @@ emit(
 			// Long-press menu of the installed app: straight to practice.
 			shortcuts: [
 				{ name: dd.free.title, url: site.path("freePractice", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
+				{ name: dd.phrases.title, url: site.path("phrases", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
 				{ name: dd.pieces.title, url: site.path("pieces", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
 				{ name: dd.log.title, url: site.path("log", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
 			],
@@ -327,11 +343,15 @@ const homeEntry = entries.home;
 const homePhoto = photos.keys.avif.find(([, w]) => w === 800)[0];
 const landing = [`${site.path("home", defaultLocale)}`, cssUrl, themeJs, homeEntry.file, ...homeEntry.preload, localeChunks[defaultLocale], ...preloadFonts, homePhoto];
 const binary = (u) => /\.(woff2|avif|webp)$/.test(u);
+// Script per page entry (its file and everything it imports statically), so the report can say
+// which page is the largest; lazy import() chunks are not counted.
+const pageJs = Object.entries(entries).map(([name, e]) => [name, [e.file, ...e.preload].reduce((a, u) => a + gz(u), 0)]).sort((a, b) => b[1] - a[1]);
 const report = {
 	pages: pageCount,
 	landingKb: +(landing.reduce((a, u) => a + (binary(u) ? statSync(join(dist, u)).size : gz(u)), 0) / 1024).toFixed(1),
 	cssKb: +(gz(cssUrl) / 1024).toFixed(1),
-	maxPageJsKb: +(Math.max(...Object.values(entries).map((e) => [e.file, ...e.preload].reduce((a, u) => a + gz(u), 0))) / 1024).toFixed(1),
+	maxPageJsKb: +(pageJs[0][1] / 1024).toFixed(1),
+	maxPageJs: pageJs[0][0],
 	localeKb: Object.fromEntries(Object.entries(localeChunks).map(([l, u]) => [l, +(gz(u) / 1024).toFixed(1)])),
 };
 console.log(`built ${pageCount} pages for ${locales.join(", ")} (default ${defaultLocale}) into ${relative(process.cwd(), dist) || "."}/`, JSON.stringify(report));

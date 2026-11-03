@@ -3,7 +3,8 @@
 //
 // Ids are stable contracts: stored progress and sync data use them. Never rename an id;
 // add a new one and keep the old one if a lesson changes meaning. See docs/adding-lessons.md.
-import { STEPS, isNoteKey, midiOf, parseNoteKey, whiteRange } from "../core/notes.js";
+import { STEPS, isNoteKey, midiOf, noteKey, parseNoteKey, whiteRange } from "../core/notes.js";
+import { PHRASE_LEVELS, phrasePool } from "../core/phrases.js";
 
 export const UNLOCK_PCT = 90;
 export const ROUND_SIZE = 20;
@@ -229,7 +230,9 @@ export const PIECES = [
 		lesson: "treble-c4-g4",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 100,
 		right: "C4q C4q C4q E4q | D4q D4q D4q F4q | E4q E4q D4q D4q | C4w | E4q E4q E4q E4q | G4h F4h | D4q D4q D4q D4q | F4h E4h | C4q C4q C4q E4q | D4q D4q D4q F4q | E4q E4q D4q D4q | C4w",
+		left: "C3w | G2w | C3h G2h | C3w | C3w | G2w | G2w | G2h C3h | C3w | G2w | C3h G2h | C3w",
 	},
 	{
 		id: "tuiki-tuiki",
@@ -238,6 +241,7 @@ export const PIECES = [
 		lesson: "treble-c4-c5",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 100,
 		right: "C4q C4q G4q G4q | A4q A4q G4h | F4q F4q E4q E4q | D4q D4q C4h | G4q G4q F4q F4q | E4q E4q D4h | G4q G4q F4q F4q | E4q E4q D4h | C4q C4q G4q G4q | A4q A4q G4h | F4q F4q E4q E4q | D4q D4q C4h",
 	},
 	{
@@ -247,7 +251,9 @@ export const PIECES = [
 		lesson: "treble-c4-g4",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 100,
 		right: "E4q D4q C4q D4q | E4q E4q E4h | D4q D4q D4h | E4q G4q G4h | E4q D4q C4q D4q | E4q E4q E4q E4q | D4q D4q E4q D4q | C4w",
+		left: "C3w | C3w | G2w | C3w | C3w | C3w | G2w | C3w",
 	},
 	{
 		id: "jaakko-kulta",
@@ -256,6 +262,7 @@ export const PIECES = [
 		lesson: "treble-c4-c5",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 96,
 		right: "C4q D4q E4q C4q | C4q D4q E4q C4q | E4q F4q G4h | E4q F4q G4h | G4e A4e G4e F4e E4q C4q | G4e A4e G4e F4e E4q C4q | C4q G3q C4h | C4q G3q C4h",
 	},
 	{
@@ -265,7 +272,9 @@ export const PIECES = [
 		lesson: "treble-c4-g4",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 100,
 		right: "E4q E4q F4q G4q | G4q F4q E4q D4q | C4q C4q D4q E4q | E4qd D4e D4h | E4q E4q F4q G4q | G4q F4q E4q D4q | C4q C4q D4q E4q | D4qd C4e C4h",
+		left: "C3w | G2w | C3w | G2w | C3w | G2w | C3w | G2h C3h",
 	},
 	{
 		id: "kehtolaulu",
@@ -274,6 +283,7 @@ export const PIECES = [
 		lesson: "treble-c4-c5",
 		fifths: 0,
 		time: [3, 4],
+		tempo: 72,
 		pickup: true,
 		// Transposed from E flat to C; the final note is held for a full bar.
 		right: "E4e E4e | G4qd E4e E4q | G4q rq E4e G4e | C5q B4qd A4e | A4q G4q D4e E4e | F4q D4q D4e E4e | F4q rq D4e F4e | B4e A4e G4q B4q | C5q rq C4e C4e | C5h A4e F4e | G4h E4e C4e | F4q G4q A4q | G4h C4e C4e | C5h A4e F4e | G4h E4e C4e | F4q E4q D4q | C4hd",
@@ -285,6 +295,7 @@ export const PIECES = [
 		lesson: "treble-c4-g4",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 112,
 		right: "E4q E4q E4h | E4q E4q E4h | E4q G4q C4qd D4e | E4w | F4q F4q F4qd F4e | F4q E4q E4q E4e E4e | E4q D4q D4q E4q | D4h G4h | E4q E4q E4h | E4q E4q E4h | E4q G4q C4qd D4e | E4w | F4q F4q F4qd F4e | F4q E4q E4q E4e E4e | G4q G4q F4q D4q | C4w",
 	},
 	{
@@ -294,6 +305,7 @@ export const PIECES = [
 		lesson: "treble-c4-g4",
 		fifths: 0,
 		time: [4, 4],
+		tempo: 100,
 		right: "G4q E4q E4h | F4q D4q D4h | C4q D4q E4q F4q | G4q G4q G4h | G4q E4q E4h | F4q D4q D4h | C4q E4q G4q G4q | C4w | D4q D4q D4q D4q | D4q E4q F4h | E4q E4q E4q E4q | E4q F4q G4h | G4q E4q E4h | F4q D4q D4h | C4q E4q G4q G4q | C4w",
 	},
 	{
@@ -303,6 +315,7 @@ export const PIECES = [
 		lesson: "keysig",
 		fifths: 1,
 		time: [3, 4],
+		tempo: 104,
 		right: "D5q G4e A4e B4e C5e | D5q G4q G4q | E5q C5e D5e E5e F#5e | G5q G4q G4q | C5q D5e C5e B4e A4e | B4q C5e B4e A4e G4e | F#4q G4e A4e B4e G4e | A4hd",
 	},
 	{
@@ -313,6 +326,7 @@ export const PIECES = [
 		lesson: "accidentals",
 		fifths: 0,
 		time: [3, 4],
+		tempo: 66,
 		pickup: true,
 		// The theme with doubled note values (3/4 with eighths instead of 3/8 with sixteenths).
 		right: "E5e D#5e | E5e D#5e E5e B4e D5e C5e | A4q re C4e E4e A4e | B4q re E4e G#4e B4e | C5q re E4e E5e D#5e | E5e D#5e E5e B4e D5e C5e | A4q re C4e E4e A4e | B4q re E4e C5e B4e | A4hd",
@@ -325,6 +339,7 @@ export const PIECES = [
 		lesson: "keysig",
 		fifths: 1,
 		time: [4, 4],
+		tempo: 56,
 		pickup: true,
 		// The first eight bars of the melody, simplified (the opening upbeat as one quarter),
 		// ending on A. Checked against the public-domain Mutopia edition (Chop-28-4).
@@ -340,8 +355,11 @@ export function barBeats(time) {
 /** Progress id for free practice (any clef, range and key signature the user chooses). */
 export const FREE_ID = "free";
 
+/** Progress ids for phrase training, one per level (mode "row"). */
+export const PHRASE_IDS = Object.keys(PHRASE_LEVELS).map((level) => `phrases-${level}`);
+
 export const CATALOG_IDS = {
-	lessons: [...PITCH_LESSONS.map((l) => l.id), FREE_ID],
+	lessons: [...PITCH_LESSONS.map((l) => l.id), FREE_ID, ...PHRASE_IDS],
 	rhythm: RHYTHM_LESSONS.map((l) => l.id),
 	pieces: PIECES.map((p) => p.id),
 };
@@ -423,5 +441,26 @@ export function freeLesson(raw) {
 			}
 			return out;
 		},
+	};
+}
+
+// ---- phrase training ---------------------------------------------------------------------
+const PHRASE_KEYBOARD = { treble: ["C4", "B5"], bass: ["C2", "B4"], grand: ["C3", "B5"] };
+
+/**
+ * A lesson-like object for the drill (src/pages/practice.js) in row mode: each row is a
+ * generated phrase (src/core/phrases.js) instead of random notes.
+ */
+export function phraseLesson(level, clef = null) {
+	const lv = PHRASE_LEVELS[level] ? Number(level) : 1;
+	const staff = clef && PHRASE_LEVELS[lv].ranges[clef] ? clef : Object.keys(PHRASE_LEVELS[lv].ranges)[0];
+	return {
+		id: `phrases-${lv}`,
+		staff,
+		modes: ["row"],
+		range: PHRASE_KEYBOARD[staff],
+		phrase: { level: lv, clef: staff },
+		keySigs: null,
+		pool: () => phrasePool(lv, staff).map((n) => ({ ...n, key: noteKey(n.step, n.alter, n.octave) })),
 	};
 }

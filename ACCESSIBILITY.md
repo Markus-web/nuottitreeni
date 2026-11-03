@@ -16,11 +16,11 @@ Every change runs the browser suite (`tests/browser/run.mjs`, see [docs/testing.
 
 | Need | How |
 |---|---|
-| Seeing the notes and keys | Text contrast 7:1, key states marked with ✓ and ✗ as well as colour, high contrast mode supported, notation scales with the text |
+| Seeing the notes and keys | Text contrast 7:1, key states marked with ✓ and ✗ as well as colour, high contrast mode supported, notation scales with the text. Optional colours by note name, hand or finger always come with the names; labels in the falling notes are black or white, whichever has more contrast with the bar |
 | Without an instrument | The name-the-note mode answers with buttons (or letter keys while the buttons have focus), so reading can be practised without any keyboard, MIDI or microphone |
 | Keyboard use | Every control works with the keyboard. The on-screen piano is one tab stop; arrow keys move between keys, Enter or Space plays. Letter keys play notes only while the piano has focus |
 | Screen readers | Real headings and landmarks, status messages announced politely, names for every control, a text version of every built-in piece |
-| Time | No time limits in lessons, rhythm questions or the wait mode for pieces. Timed modes are optional and can be slowed down |
+| Time | No time limits in lessons, phrase training, rhythm questions or the wait mode for pieces. Timed modes (rhythm tapping, tempo mode, speed reading) are optional, can be slowed down, and speed reading can be paused at any time |
 | Motion | Nothing moves, blinks or plays by itself. The optional falling-notes view is off by default, moves only while a tempo run or Listen plays, and stops with the Stop button. With reduced motion turned on in the system, CSS transitions are off and the falling notes move in whole-beat steps instead of scrolling |
 | Understanding | Plain language, every music term explained in the lesson and the glossary, examples with note names written out |
 | Small screens and zoom | Works at 320 pixels wide and at 400 % zoom; the staff and the keyboard scroll inside their own box |
@@ -31,6 +31,7 @@ Every change runs the browser suite (`tests/browser/run.mjs`, see [docs/testing.
 - **Black keys (2.5.5, essential exception).** Black keys are narrower than 44 pixels because the shape of the keyboard is part of what is taught. They are at least 24 pixels wide, and every key can be chosen with the arrow keys.
 - **Two-dimensional content (1.4.10).** On narrow screens the keyboard and the staff scroll sideways inside their own box; the page itself never does.
 - **Timed rhythm (2.2.3).** Playing a rhythm and the tempo mode for pieces are timed by nature. They are optional, the tempo can be lowered to 40 beats per minute, and the untimed rhythm questions and wait mode cover the same skills.
+- **Speed reading (2.2.1, 2.2.3).** Speed reading is a timed game by design. It is optional, the time for the first note can be set to 6 seconds, Pause stops the clock at any time, and the untimed drills and phrase training cover the same skill. With reduced motion the time shows as seconds instead of a shrinking bar.
 - **Music terms (3.1.3, 3.1.5).** Terms like clef and ledger line cannot be avoided. Each is explained where it first appears and in the glossary.
 - **Manual testing.** Screen reader testing with NVDA, VoiceOver and Orca has not been done on every device yet. Reports are welcome.
 

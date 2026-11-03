@@ -6,12 +6,16 @@ import { RHYTHM_LESSONS } from "../content/catalog.js";
 import { parseMelody, toStaffItems } from "../core/notation.js";
 import { recordRound } from "../core/progress.js";
 import { Metronome } from "../core/sound.js";
+import { judgeTiming } from "../core/timing.js";
+import { keepAwake } from "../core/wake-lock.js";
 import { renderStaff } from "../core/staff.js";
 import { getDeviceId, getProgress, saveProgress } from "../core/store.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el, focusHeading, howTo } from "./common.js";
 
 const QUESTIONS = 10;
+/** Text for each timing result of src/core/timing.js. */
+const TIMING_TEXT = { onTime: "rhythmUi.onTime", early: "rhythmUi.early", late: "rhythmUi.late", missed: "rhythmUi.missed" };
 const ctx = await boot();
 const { t, f, hub, sound, dict } = ctx;
 const root = $("#app-root");
@@ -168,6 +172,7 @@ function tapMode(tx) {
 		newBtn.disabled = true;
 		tapBtn.disabled = false;
 		stopBtn.hidden = false;
+		keepAwake(true);
 		tapBtn.focus();
 		results.replaceChildren();
 		let t0 = null;
@@ -189,6 +194,7 @@ function tapMode(tx) {
 	let finishTimer = null;
 	function reset() {
 		running = false;
+		keepAwake(false);
 		clearTimeout(finishTimer);
 		metronome.stop();
 		startBtn.disabled = false;
@@ -196,6 +202,8 @@ function tapMode(tx) {
 		tapBtn.disabled = true;
 		stopBtn.hidden = true;
 	}
+	// Control keys on the instrument (Devices page): start a run, or stop it.
+	hub.addEventListener("control", () => (running ? stopBtn.click() : startBtn.click()));
 	// Stop: end the run at once (no score is saved), for example to change the tempo.
 	stopBtn.addEventListener("click", () => {
 		reset();
@@ -205,22 +213,13 @@ function tapMode(tx) {
 
 	function finish(spb) {
 		reset();
-		const window = Math.max(80, spb * 0.12);
-		const used = new Set();
-		let ok = 0;
-		const lines = expected.map((time, i) => {
-			let best = -1;
-			for (let j = 0; j < taps.length; j++) if (!used.has(j) && (best < 0 || Math.abs(taps[j] - time) < Math.abs(taps[best] - time))) best = j;
-			const diff = best >= 0 ? taps[best] - time : null;
-			let result;
-			if (diff == null || Math.abs(diff) > spb / 2) result = t("rhythmUi.missed");
-			else {
-				used.add(best);
-				result = Math.abs(diff) <= window ? t("rhythmUi.onTime") : diff < 0 ? t("rhythmUi.early") : t("rhythmUi.late");
-				if (Math.abs(diff) <= window) ok++;
-			}
-			return el("li", { text: t("rhythmUi.resultLine", { i: i + 1, result }) });
-		});
+		const judged = judgeTiming(
+			expected.map((at) => ({ at })),
+			taps.map((at) => ({ at })),
+			{ window: Math.max(80, spb * 0.12), reach: spb / 2 },
+		);
+		const ok = judged.counts.onTime;
+		const lines = judged.results.map((r, i) => el("li", { text: t("rhythmUi.resultLine", { i: i + 1, result: t(TIMING_TEXT[r]) }) }));
 		const accuracy = Math.round((100 * ok) / Math.max(1, expected.length));
 		saveProgress(recordRound(getProgress(), getDeviceId(), { kind: "rhythm", id: lesson.id, mode: "tap", accuracy }, Date.now()));
 		results.replaceChildren(el("p", { text: t("rhythmUi.score", { ok, n: expected.length }) }), el("ol", { className: "results" }, ...lines));

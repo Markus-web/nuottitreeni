@@ -252,6 +252,7 @@ export async function boot() {
 	const sound = new Sound(cfg.samples);
 	const recorder = new Recorder(hub);
 	hub.mic.isMuted = () => sound.isSounding();
+	sound.midiOut = (midi, on, vel) => hub.sendNote(midi, on, vel);
 	const sync = new SyncClient();
 	const chosenNames = getSettings().noteNames;
 	const noteNames = NOTE_NAME_SYSTEMS.includes(chosenNames) ? chosenNames : dict.meta.noteNames;

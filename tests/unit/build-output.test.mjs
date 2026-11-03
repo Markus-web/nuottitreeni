@@ -53,6 +53,15 @@ test("every locale has its pages; the default locale is at /", () => {
 	assert.match(readFileSync(join(dirs.template, "index.html"), "utf8"), /<html lang="en">/);
 });
 
+test("every page starts its script through the theme script, after the first paint", () => {
+	for (const f of html(dirs.instance)) {
+		const text = readFileSync(f, "utf8");
+		if (!text.includes("<main")) continue;
+		assert.match(text, /<script src="\/assets\/js\/theme-[^"]+" data-entry="\/assets\/js\/[^"]+\.js"/, relative(dirs.instance, f));
+		assert.ok(!/<script type="module"/.test(text), `${relative(dirs.instance, f)}: no module script in the HTML`);
+	}
+});
+
 test("every local URL in the HTML points at a file that exists", () => {
 	for (const d of [dirs.instance, dirs.template]) {
 		const missing = new Set();
@@ -60,6 +69,8 @@ test("every local URL in the HTML points at a file that exists", () => {
 			const text = readFileSync(f, "utf8");
 			const urls = [...text.matchAll(/(?:href|src)="(\/[^"#?]*)/g)].map((m) => m[1]);
 			for (const m of text.matchAll(/srcset="([^"]+)"/g)) urls.push(...m[1].split(",").map((s) => s.trim().split(/\s+/)[0]));
+			// The page script and its preloads, started by the theme script after the first paint.
+			for (const m of text.matchAll(/data-(?:entry|preload)="([^"]+)"/g)) urls.push(...m[1].split(" ").filter(Boolean));
 			for (const u of urls) {
 				const target = u.endsWith("/") ? join(d, u, "index.html") : join(d, u);
 				if (!existsSync(target)) missing.add(`${relative(d, f)} -> ${u}`);

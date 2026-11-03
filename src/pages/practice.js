@@ -3,7 +3,10 @@
 // Only the first try of each note counts; a miss (or a hint) explains the note and waits for
 // the right answer. Answers come from any input (MIDI, microphone, keys) or, in name mode,
 // from the note-name buttons.
-import { FREE_ID, KEY_SIGS, PITCH_LESSONS, ROUND_SIZE, ROW_LENGTH, UNLOCK_PCT, freeConfig, freeLesson, freeRangeKeys } from "../content/catalog.js";
+import { FREE_ID, KEY_SIGS, PITCH_LESSONS, ROUND_SIZE, ROW_LENGTH, UNLOCK_PCT, freeConfig, freeLesson, freeRangeKeys, phraseLesson } from "../content/catalog.js";
+import { BEATS } from "../core/notation.js";
+import { PHRASE_LEVELS, generatePhrase } from "../core/phrases.js";
+import { keepAwake } from "../core/wake-lock.js";
 import { explainText as explain, workedExample } from "../core/worked-example.js";
 import { PianoKeyboard } from "../core/keyboard.js";
 import { octaveRange } from "../core/keyboard-layout.js";
@@ -13,6 +16,9 @@ import { renderStaff } from "../core/staff.js";
 import { getDeviceId, getProgress, getSettings, saveProgress, saveSettings } from "../core/store.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el, focusHeading, howTo, setLabel } from "./common.js";
+import { fullscreenButton } from "./fullscreen.js";
+
+const PHRASES_PER_ROUND = 5;
 
 const ctx = await boot();
 const { t, f, hub, sound, dict, noteNames } = ctx;
@@ -20,6 +26,7 @@ const root = $("#app-root");
 const params = new URLSearchParams(location.search);
 const heading = $("#page-title");
 const isFree = ctx.cfg.page === "freePractice";
+const isPhrases = ctx.cfg.page === "phrases";
 
 function nameOf(n) {
 	return noteName(n.step, n.alter, noteNames);
@@ -30,6 +37,7 @@ function explainText(target) {
 }
 
 if (isFree) setupFree();
+else if (isPhrases) setupPhrases();
 else {
 	const lesson = PITCH_LESSONS.find((l) => l.id === params.get("l"));
 	if (!lesson) root.append(el("p", { className: "notice", text: t("drill.noLesson") }), el("p", {}, el("a", { className: "standalone", href: ctx.paths.home, text: t("common.home") })));
@@ -101,6 +109,40 @@ function setupFree() {
 	if (params.has("c")) start(freeLesson(config), config.mode, drillBox);
 }
 
+// ---- phrase training: choose a level (and a clef on level 3), then the drill in row mode ---------
+function setupPhrases() {
+	const saved = params.has("level") ? { level: Number(params.get("level")), clef: params.get("c") } : (getSettings().phrases ?? { level: 1, clef: "treble" });
+	const levels = el("fieldset", {}, el("legend", { text: t("phrases.levelLegend") }));
+	for (const level of [1, 2, 3, 4]) {
+		const input = el("input", { type: "radio", name: "phrase-level", value: String(level) });
+		input.checked = level === (PHRASE_LEVELS[saved.level] ? saved.level : 1);
+		levels.append(el("label", { className: "check" }, input, `${t("phrases.levelTitle", { n: level })}: ${t(`phrases.levels.${level}`)}`));
+	}
+	const clefSel = el("select", { id: "phrase-clef" });
+	for (const c of ["treble", "bass"]) clefSel.append(el("option", { value: c, text: t(`free.clef.${c}`) }));
+	clefSel.value = saved.clef === "bass" ? "bass" : "treble";
+	const clefField = el("div", { className: "field" }, el("label", { for: "phrase-clef", text: t("phrases.clefLabel") }), clefSel);
+	const levelNow = () => Number(root.querySelector('input[name="phrase-level"]:checked')?.value ?? 1);
+	const syncClef = () => (clefField.hidden = levelNow() !== 3);
+	levels.addEventListener("change", syncClef);
+	syncClef();
+	const startBtn = el("button", { type: "button", className: "btn btn-primary", icon: icons.play, text: t("phrases.start") });
+	const form = el("section", { "aria-labelledby": "phrase-settings-h", className: "free-form" }, el("h2", { id: "phrase-settings-h", text: t("phrases.settings") }), levels, clefField, el("div", { className: "actions" }, startBtn));
+	const drillBox = el("div", { id: "phrase-drill" });
+	root.append(howTo(ctx, "phrases", dict.howto.phrases), form, drillBox);
+	const begin = () => {
+		const config = { level: levelNow(), clef: clefSel.value };
+		saveSettings({ phrases: config });
+		history.replaceState(null, "", `${location.pathname}?${new URLSearchParams({ level: String(config.level), c: config.clef })}`);
+		start(phraseLesson(config.level, config.level === 3 ? config.clef : null), "row", drillBox);
+	};
+	startBtn.addEventListener("click", () => {
+		begin();
+		focusHeading(drillBox.querySelector("h2"));
+	});
+	if (params.has("level")) begin();
+}
+
 // ---- the drill ------------------------------------------------------------------------------
 let stopPrevious = null;
 
@@ -109,9 +151,12 @@ function start(lesson, mode, container) {
 	const listeners = new AbortController();
 	stopPrevious = () => listeners.abort();
 	const { signal } = listeners;
-	const free = lesson.id === FREE_ID;
-	const tx = free ? { title: t("free.title"), hint: "" } : dict.lessons[lesson.id];
-	const title = `${tx.title} (${t(`modes.${mode}.label`).toLowerCase()})`;
+	// Free practice and phrase training are drills on their own page (not a lesson guide):
+	// "free" below covers both, `lesson.phrase` tells phrases apart.
+	const free = lesson.id === FREE_ID || !!lesson.phrase;
+	const tx = lesson.phrase ? { title: t("phrases.drillTitle", { n: lesson.phrase.level }), hint: "" } : free ? { title: t("free.title"), hint: "" } : dict.lessons[lesson.id];
+	// Phrases are always read as a row, so their title does not name the mode.
+	const title = lesson.phrase ? tx.title : `${tx.title} (${t(`modes.${mode}.label`).toLowerCase()})`;
 	if (!free) {
 		heading.textContent = title;
 		document.title = `${title}, ${t("site.name")}`;
@@ -131,6 +176,7 @@ function start(lesson, mode, container) {
 	const guide = free ? null : howTo(ctx, helpKey, dict.howto[helpKey], example);
 	const drillHeading = free ? el("h2", { text: title }) : null;
 	const count = el("p", { className: "count" });
+	const streakLine = el("p", { className: "count" });
 	const keySigLine = el("p", { className: "muted" });
 	const prompt = el("p", { className: "prompt", "aria-live": "polite" });
 	const figure = el("div", { className: "staff-box" });
@@ -155,7 +201,7 @@ function start(lesson, mode, container) {
 		}),
 	);
 	const summary = el("section", { hidden: true, "aria-labelledby": "summary-h" });
-	container.replaceChildren(...[back, notice, guide, remember, drillHeading, el("div", { className: "drill-head" }, count), question, kbdBox, options, summary].filter(Boolean));
+	container.replaceChildren(...[back, notice, guide, remember, drillHeading, el("div", { className: "drill-head" }, count, streakLine, fullscreenButton(ctx)), question, kbdBox, options, summary].filter(Boolean));
 
 	const keyboard = new PianoKeyboard(kbdBox, { t, noteNames, low: 48, high: 83, names: getSettings().namesOnKeys, id: "drill-kbd" });
 	function setRange() {
@@ -213,8 +259,12 @@ function start(lesson, mode, container) {
 	function newRound() {
 		const keySig = lesson.keySigs ? lesson.keySigs[Math.floor(Math.random() * lesson.keySigs.length)] : null;
 		const pool = lesson.pool(keySig).map((n) => ({ ...n, midi: n.octave == null ? null : midiOf(n), key: noteKey(n.step, n.alter, n.octave) }));
-		const total = mode === "row" ? ROW_LENGTH * 3 : ROUND_SIZE;
-		round = { keySig, pool, total, i: 0, results: [], missed: false, busy: false, row: [], rowPos: 0, target: null, shownAt: 0, prevKey: null, earStarted: mode !== "ear" };
+		// Phrase training: the round is five generated phrases, each read as one row.
+		const phrases = lesson.phrase ? Array.from({ length: PHRASES_PER_ROUND }, () => generatePhrase(lesson.phrase)) : null;
+		const total = phrases ? phrases.reduce((a, p) => a + p.notes.length, 0) : mode === "row" ? ROW_LENGTH * 3 : ROUND_SIZE;
+		round = { keySig, pool, phrases, total, i: 0, results: [], missed: false, busy: false, row: [], rowPos: 0, target: null, shownAt: 0, prevKey: null, earStarted: mode !== "ear", streak: 0, bestStreak: 0 };
+		streakLine.textContent = "";
+		keepAwake(true);
 		keySigLine.textContent = keySig ? t("drill.keySig", { name: dict.keySigNames[keySig] }) : "";
 		if (mode === "name") buildAnswers(pool);
 		summary.hidden = true;
@@ -233,6 +283,14 @@ function start(lesson, mode, container) {
 	}
 
 	function nextRow() {
+		if (round.phrases) {
+			const phrase = round.phrases.shift();
+			round.row = phrase.notes.map((n) => ({ ...n, key: noteKey(n.step, n.alter, n.octave) }));
+			round.rowPos = 0;
+			round.keySig = phrase.key === "C" ? null : phrase.key;
+			keySigLine.textContent = round.keySig ? t("drill.keySig", { name: dict.keySigNames[round.keySig] }) : "";
+			return;
+		}
 		const row = [];
 		let prevKey = round.prevKey;
 		for (let i = 0; i < ROW_LENGTH; i++) {
@@ -293,14 +351,21 @@ function start(lesson, mode, container) {
 		const keySig = round.keySig ? KEY_SIGS[round.keySig].alters : null;
 		if (mode === "row") {
 			prompt.textContent = t("drill.promptRow");
-			const items = round.row.map((n, i) => ({
-				type: "note",
-				value: "q",
-				notes: [n],
-				midi: i === round.rowPos ? n.midi : undefined,
-				state: i < round.rowPos ? "done" : i === round.rowPos ? (state === "bad" ? "bad" : "current") : "",
-			}));
-			figure.innerHTML = renderStaff({ staff: lesson.staff, keySig, items, label: t("drill.rowLabel", { n: round.row.length }), className: "staff-row" });
+			const items = [];
+			let beats = 0;
+			round.row.forEach((n, i) => {
+				items.push({
+					type: "note",
+					value: n.value ?? "q",
+					notes: [n],
+					midi: i === round.rowPos ? n.midi : undefined,
+					state: i < round.rowPos ? "done" : i === round.rowPos ? (state === "bad" ? "bad" : "current") : "",
+				});
+				// Phrases are two bars of 4/4: a bar line in the middle, as in real music.
+				beats += BEATS[n.value ?? "q"];
+				if (round.phrases && beats === 4) items.push({ type: "bar" });
+			});
+			figure.innerHTML = renderStaff({ staff: lesson.staff, keySig, timeSig: round.phrases ? [4, 4] : null, items, label: t("drill.rowLabel", { n: round.row.length }), className: "staff-row" });
 		} else {
 			prompt.textContent = mode === "name" ? t("drill.promptName") : t("drill.promptStaff");
 			figure.innerHTML = renderStaff({ staff: lesson.staff, keySig, items: [{ type: "note", value: "q", notes: [target], state, midi: target.midi }], label: staffLabel() });
@@ -333,6 +398,8 @@ function start(lesson, mode, container) {
 		if (!round.missed) {
 			round.missed = true;
 			round.results.push({ key: round.target.key, ok: false, ms: Math.round(performance.now() - round.shownAt) });
+			round.streak = 0;
+			streakLine.textContent = "";
 		}
 		feedback.replaceChildren(el("p", {}, el("strong", { text: t("drill.hintLabel") }), " ", explainText(round.target)));
 	});
@@ -358,7 +425,12 @@ function start(lesson, mode, container) {
 	function succeed() {
 		const target = round.target;
 		const ms = Math.round(performance.now() - round.shownAt);
-		if (!round.missed) round.results.push({ key: target.key, ok: true, ms });
+		if (!round.missed) {
+			round.results.push({ key: target.key, ok: true, ms });
+			round.streak++;
+			round.bestStreak = Math.max(round.bestStreak, round.streak);
+			streakLine.textContent = round.streak > 1 ? t("drill.streak", { n: round.streak }) : "";
+		}
 		round.busy = true;
 		round.i++;
 		feedback.replaceChildren(el("p", { className: "ok", text: t("drill.correct") }));
@@ -376,6 +448,8 @@ function start(lesson, mode, container) {
 		if (round.missed) return;
 		round.missed = true;
 		round.results.push({ key: target.key, ok: false, ms: Math.round(performance.now() - round.shownAt) });
+		round.streak = 0;
+		streakLine.textContent = "";
 		draw("bad");
 		feedback.replaceChildren(
 			el("p", {}, el("span", { className: "bad", text: t("drill.wrong", { name: nameOf(target) }) }), " ", t(mode === "name" ? "drill.youChose" : "drill.youPlayed", { name: playedName })),
@@ -408,6 +482,7 @@ function start(lesson, mode, container) {
 	}
 
 	function finish() {
+		keepAwake(false);
 		const res = round.results;
 		const accuracy = Math.round((100 * res.filter((r) => r.ok).length) / Math.max(1, res.length));
 		const times = res.map((r) => r.ms).sort((a, b) => a - b);
@@ -434,7 +509,7 @@ function start(lesson, mode, container) {
 			focusHeading(free ? drillHeading : heading);
 		});
 		const changeSettings = free ? el("button", { type: "button", className: "btn", icon: icons.arrowLeft, text: t("free.change") }) : null;
-		changeSettings?.addEventListener("click", () => focusHeading($("#free-settings-h")));
+		changeSettings?.addEventListener("click", () => focusHeading($(lesson.phrase ? "#phrase-settings-h" : "#free-settings-h")));
 		summary.replaceChildren(
 			h,
 			el(
@@ -442,6 +517,7 @@ function start(lesson, mode, container) {
 				{ className: "facts" },
 				el("div", {}, el("dt", { text: t("drill.accuracy") }), el("dd", { text: f.percent(accuracy) })),
 				el("div", {}, el("dt", { text: t("drill.typical") }), el("dd", { text: t("drill.seconds", { s: f.seconds(median) }) })),
+				el("div", {}, el("dt", { text: t("drill.bestStreak") }), el("dd", { text: f.int(round.bestStreak) })),
 			),
 			message ? el("p", { text: message }) : null,
 			el("h3", { text: t("drill.weakest") }),

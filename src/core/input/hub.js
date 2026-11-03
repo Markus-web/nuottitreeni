@@ -15,6 +15,13 @@ import { applyCurve, parseMidiMessage } from "./parse.js";
 const PIANO_LOW = 21;
 const PIANO_HIGH = 108;
 
+/** The control action ("toggle" or "restart") of a raw key on a device, or null. */
+export function controlAction(controlKeys, raw) {
+	if (!controlKeys) return null;
+	for (const [action, note] of Object.entries(controlKeys)) if (note === raw) return action;
+	return null;
+}
+
 export class InputHub extends EventTarget {
 	constructor() {
 		super();
@@ -105,6 +112,19 @@ export class InputHub extends EventTarget {
 			return;
 		}
 		const raw = msg.note;
+		// Teaching a control key (Devices page): the next key pressed is taken, not played.
+		if (this.learning && msg.on) {
+			const done = this.learning;
+			this.learning = null;
+			done({ key, raw });
+			return;
+		}
+		// Control keys (opt-in per device): they start, stop or restart practice instead of playing.
+		const action = controlAction(dev.controlKeys, raw);
+		if (action) {
+			if (msg.on) this.dispatchEvent(new CustomEvent("control", { detail: { action, device: name } }));
+			return;
+		}
 		this.range.min = this.range.min == null ? raw : Math.min(this.range.min, raw);
 		this.range.max = this.range.max == null ? raw : Math.max(this.range.max, raw);
 		const midi = raw + dev.octave * 12 + dev.transpose;
@@ -124,6 +144,11 @@ export class InputHub extends EventTarget {
 		if (on) this.held.add(midi);
 		else this.held.delete(midi);
 		this.dispatchEvent(new CustomEvent("note", { detail: { midi, on, vel, source, device, latency } }));
+	}
+
+	/** Take the next key pressed on any device as a control key: callback({ key, raw }). */
+	learnNext(callback) {
+		this.learning = callback;
 	}
 
 	/** Send a short message to the chosen output (Web MIDI), or to USB/BLE devices. */

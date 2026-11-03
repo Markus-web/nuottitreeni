@@ -10,6 +10,7 @@ import { bars, parseMelody, systems, toStaffItems } from "../core/notation.js";
 import { noteName } from "../core/notes.js";
 import { renderStaff } from "../core/staff.js";
 import { workedExample } from "../core/worked-example.js";
+import { pieceCaption, pieceTextLines } from "../core/piece-text.js";
 import { esc } from "./layout.js";
 import { arrowLeft, arrowRight, bookOpen, ear, metronome, musicNote, musicNotes, notebook, pianoKeys, shuffle, textAa } from "../content/icons.js";
 import { svgIcon } from "../core/icon.js";
@@ -85,7 +86,7 @@ export function homePage(ctx) {
 	const pieceCards = PIECES.slice(0, 3)
 		.map((p) => {
 			const m = dict.piecesMeta[p.id];
-			return `<li class="card"><h3><a href="${site.path("piece", loc, p.id)}">${esc(m.title)}</a></h3><p>${esc(m.description)}</p></li>`;
+			return `<li class="card" data-piece="${p.id}"><h3><a href="${site.path("piece", loc, p.id)}">${esc(m.title)}</a></h3><p>${esc(m.description)}</p><p class="status" data-status></p></li>`;
 		})
 		.join("\n");
 	const appLd = {
@@ -130,9 +131,16 @@ ${photo(ctx, "keys")}
 <p>${esc(t("home.pitchIntro"))}</p>
 <ol class="cards" id="lesson-cards">${lessonCards}</ol>
 </section>
-<section aria-labelledby="free-h" data-section="free"><h2 id="free-h">${svgIcon(shuffle, "section-icon")}${esc(t("free.title"))}</h2>
-<p>${esc(t("free.intro"))}</p>
-<p><a class="standalone" href="${site.path("freePractice", loc)}">${esc(t("free.homeLink"))}${svgIcon(arrowRight)}</a></p></section>
+<section aria-labelledby="more-h" data-section="free"><h2 id="more-h">${svgIcon(shuffle, "section-icon")}${esc(t("home.moreHeading"))}</h2>
+<p>${esc(t("home.moreIntro"))}</p>
+<ul class="cards">${[
+	["freePractice", "free"],
+	["phrases", "phrases"],
+	["speed", "speed"],
+	["explore", "explore"],
+]
+	.map(([key, s]) => `<li class="card"><h3><a href="${site.path(key, loc)}">${esc(t(`${s}.title`))}</a></h3><p>${esc(t(`${s}.intro`))}</p></li>`)
+	.join("")}</ul></section>
 <section aria-labelledby="rhythm-h" data-section="rhythm"><h2 id="rhythm-h">${svgIcon(metronome, "section-icon")}${esc(t("home.rhythmHeading"))}</h2>
 <p>${esc(t("home.rhythmIntro"))}</p>
 <ul class="cards" id="rhythm-cards">${rhythmCards}</ul></section>
@@ -280,6 +288,15 @@ export function practicePage(ctx) {
 export function freePracticePage(ctx) {
 	return shell(ctx, "freePractice", "practice", ctx.t("free.title"), ctx.t("free.intro"));
 }
+export function phrasesPage(ctx) {
+	return shell(ctx, "phrases", "practice", ctx.t("phrases.title"), ctx.t("phrases.intro"));
+}
+export function speedPage(ctx) {
+	return shell(ctx, "speed", "speed", ctx.t("speed.title"), ctx.t("speed.intro"));
+}
+export function explorePage(ctx) {
+	return shell(ctx, "explore", "explore", ctx.t("explore.title"), ctx.t("explore.intro"));
+}
 export function rhythmPracticePage(ctx) {
 	return shell(ctx, "rhythmPractice", "rhythm", ctx.t("home.rhythmHeading"));
 }
@@ -302,9 +319,9 @@ export function piecesPage(ctx) {
 	const cards = [...PIECES].sort((a, b) => a.level - b.level).map((p) => {
 		const m = dict.piecesMeta[p.id];
 		const lessonTitle = dict.lessons[p.lesson]?.title ?? "";
-		return `<li class="card"><h2 class="card-title"><a href="${site.path("piece", loc, p.id)}">${esc(m.title)}</a></h2><p>${esc(m.description)}</p><p class="meta-line">${esc(t("pieces.level", { n: p.level }))}. ${esc(
+		return `<li class="card" data-piece="${p.id}"><h2 class="card-title"><a href="${site.path("piece", loc, p.id)}">${esc(m.title)}</a></h2><p>${esc(m.description)}</p><p class="meta-line">${esc(t("pieces.level", { n: p.level }))}. ${esc(
 			t("pieces.after", { title: lessonTitle }),
-		)}</p></li>`;
+		)}</p><p class="status" data-status></p></li>`;
 	}).join("\n");
 	return {
 		key: "pieces",
@@ -330,19 +347,8 @@ ${photo(ctx, "music-stand")}
 
 /** Text alternative for a built-in piece, generated from its notation. */
 function pieceText(ctx, piece) {
-	const { t, dict } = ctx;
-	const sys = dict.meta.noteNames;
-	return bars(parseMelody(piece.right))
-		.map((bar, i) => {
-			const items = bar
-				.map((it) =>
-					it.type === "rest"
-						? t("piece.values.rest")
-						: `${it.notes.map((n) => `${noteName(n.step, n.alter, sys)}${n.octave}`).join("+")} ${t(`piece.values.${it.value}`)}`,
-				)
-				.join(", ");
-			return `<li>${esc(t("piece.bar", { n: i + 1 }))}: ${esc(items)}</li>`;
-		})
+	return pieceTextLines(piece, ctx.t, ctx.dict.meta.noteNames)
+		.map((line) => `<li>${esc(line)}</li>`)
 		.join("");
 }
 
@@ -350,16 +356,17 @@ function pieceText(ctx, piece) {
 export function renderSystems(ctx, piece, stateFor = () => "") {
 	const { t, dict } = ctx;
 	const alters = altersFor(piece.fifths);
-	return systems(piece.right, { alters })
+	return systems(piece.right, { alters, left: piece.left })
 		.map((sys, li) => {
 			let step = sys.firstStep;
 			const items = sys.items.map((it) => (it.type === "note" ? { ...it, state: stateFor(step), step: step++ } : it));
 			return renderStaff({
-				staff: "treble",
+				staff: piece.left ? "grand" : "treble",
 				keySig: Object.keys(alters).length ? alters : null,
 				timeSig: li === 0 ? piece.time : null,
 				items,
 				label: `${dict.piecesMeta[piece.id].title}, ${t("piece.bar", { n: sys.firstBar })}`,
+				barNumber: sys.firstBar,
 				scale: 1,
 				className: "staff-system",
 			});
@@ -370,9 +377,7 @@ export function renderSystems(ctx, piece, stateFor = () => "") {
 export function piecePage(ctx, piece) {
 	const { t, site, loc, dict } = ctx;
 	const m = dict.piecesMeta[piece.id];
-	const key = (piece.minor ? dict.piece.keyMinor : dict.piece.keyMajor)[piece.fifths] ?? "";
-	const barCount = bars(parseMelody(piece.right)).length;
-	const figure = t("piece.figure", { title: m.title, composer: piece.composer, key, time: `${piece.time[0]}/${piece.time[1]}`, bars: barCount });
+	const figure = pieceCaption(piece, m.title, t, dict);
 	const crumbs = [
 		{ name: t("common.home"), href: site.path("home", loc) },
 		{ name: t("pieces.title"), href: site.path("pieces", loc) },
@@ -406,8 +411,8 @@ export function piecePage(ctx, piece) {
 		body: `<h1 id="page-title" tabindex="-1">${esc(m.title)}</h1>
 <p class="lead">${esc(m.description)}</p>
 <p class="meta-line">${esc(t("pieces.composer", { name: piece.composer }))}. ${esc(t("pieces.level", { n: piece.level }))}. <a href="${site.path("lesson", loc, piece.lesson)}">${esc(t("pieces.after", { title: dict.lessons[piece.lesson].title }))}</a></p>
-<figure class="figure" tabindex="0"><div id="score" class="score-systems">${renderSystems(ctx, piece)}</div><figcaption>${esc(figure)}</figcaption></figure>
-<details><summary>${esc(t("piece.asText"))}</summary><ol class="results">${pieceText(ctx, piece)}</ol></details>
+<figure class="figure" tabindex="0" id="score-figure"><div id="score" class="score-systems">${renderSystems(ctx, piece)}</div><figcaption>${esc(figure)}</figcaption></figure>
+<details id="piece-text"><summary>${esc(t("piece.asText"))}</summary><ol class="results">${pieceText(ctx, piece)}</ol></details>
 <noscript><p class="notice">${esc(t("common.noscript"))}</p></noscript>
 <div id="app-root"></div>`,
 	};

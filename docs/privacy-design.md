@@ -10,14 +10,16 @@ The user-facing summary is [PRIVACY.md](../PRIVACY.md); the legal notice shown i
 4. **Microphone stays local.** Microphone audio is analysed in memory (`src/core/input/mic.js`): only the recognised note number is used; samples are never stored, recorded or sent. Echo cancellation and other processing are off, and the app's own sound is not played for microphone notes. `Permissions-Policy` allows the microphone for the site itself only.
 5. **No identifiers that link visits.** No cookies. IP addresses reach the Worker only for rate limits, as a salted hash that changes every day and is kept for two days.
 6. **The user is in control.** Export, import, delete locally, download the server copy, delete the server copy, all from Settings.
+7. **Browser features without data.** `Permissions-Policy` also allows the Screen Wake Lock (the screen stays on while an exercise runs, `src/core/wake-lock.js`) and full screen for the site itself. Neither stores or sends anything. Key lights and play-along only send notes to the MIDI output the user chose.
 
 ## Browser storage (stable keys)
 
 | Key or store | Content | Module |
 |---|---|---|
-| `localStorage` `nt.v1.settings` | Settings (theme, sound, display incl. note names and note colours, recorder, daily goal, auto sync, MIDI output, inputs turned off, microphone on, the last free-practice choice, which "How to practise" boxes were already shown) | `src/core/store.js` |
+| `localStorage` `nt.v1.settings` | Settings (theme, sound, display incl. note names, colours by note name, hand or finger, names on black keys, keeping the screen on, recorder, daily goal, auto sync, MIDI output and key lights, inputs turned off, microphone on, the last free-practice, phrase and speed-reading choices, the best speed-reading result per clef, the key chosen per piece, which "How to practise" boxes were already shown) | `src/core/store.js` |
 | `nt.v1.device` | Random device id (`[a-z0-9]{8,40}`) | `store.js`, `sync-code.js` |
-| `nt.v1.devices` | Per-keyboard settings keyed by "name\|manufacturer" (channel, octave, transpose, velocity, split point, keyboard size) | `store.js` |
+| `nt.v1.devices` | Per-keyboard settings keyed by "name\|manufacturer" (channel, octave, transpose, velocity, split point, keyboard size, control keys) | `store.js` |
+| `nt.v1.pieceRuns` | The last 10 runs per built-in piece: time, mode, tempo, score, wrong notes. Browser only, not part of progress or sync | `store.js` |
 | `nt.v1.progress` | Progress v1 | `progress.js` |
 | `nt.v1.sync` | `{ code, rev, lastSyncAt }` | `sync.js` |
 | IndexedDB `nuottitreeni`, store `takes` | MIDI recordings (Standard MIDI File bytes, start time, length, note count) | `recorder.js`, `log.js` |

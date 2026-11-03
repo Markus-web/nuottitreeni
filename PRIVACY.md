@@ -14,6 +14,7 @@ Nuottitreeni is built so that it does not need to know who you are. This page su
 |---|---|---|---|---|
 | Practice statistics (lessons, right and wrong answers per note, answer times, minutes per day) | Your browser (`localStorage`, key `nt.v1.progress`) | Progress and weak notes | Until you delete it | You |
 | Settings and per-keyboard settings | Your browser (`nt.v1.settings`, `nt.v1.devices`) | Remembering your choices | Until you delete it | You |
+| The last 10 runs of each piece (time, mode, tempo, score, wrong notes) | Your browser (`nt.v1.pieceRuns`) | The history on the piece page | Until you delete it | You; never synced |
 | Random device id | Your browser (`nt.v1.device`) | Keeping devices apart when syncing | Until you delete it | You, and the server if you sync |
 | Your sync code, if you use one | Your browser (`nt.v1.sync`) | Syncing without typing the code again | Until you unlink this browser | You |
 | MIDI recordings, imported sheet music | Your browser (IndexedDB `nuottitreeni`) | Practice log, your own pieces | Until you delete them | You |

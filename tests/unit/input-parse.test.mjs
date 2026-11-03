@@ -38,3 +38,12 @@ test("QWERTY map and velocity curves", () => {
 	assert.ok(applyCurve(100, "hard") < 100);
 	assert.equal(applyCurve(0, "linear"), 1);
 });
+
+test("control keys map raw notes to actions", async () => {
+	const { controlAction } = await import("../../src/core/input/hub.js");
+	assert.equal(controlAction(null, 21), null);
+	assert.equal(controlAction({ toggle: 21, restart: 23 }, 21), "toggle");
+	assert.equal(controlAction({ toggle: 21, restart: 23 }, 23), "restart");
+	assert.equal(controlAction({ toggle: 21, restart: 23 }, 60), null);
+	assert.equal(controlAction({ toggle: 21 }, 23), null, "only the keys that were taught");
+});

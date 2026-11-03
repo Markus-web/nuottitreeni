@@ -25,6 +25,12 @@ export function layoutKeys(low, high) {
 	return { keys, whiteCount: white };
 }
 
+/** One spelling of a black key, e.g. "C♯" (letters) or "Cis" (H system); `prefer` = "sharp" | "flat". */
+export function blackName(midi, prefer, noteNames) {
+	const n = spellMidi(midi, prefer);
+	return noteName(n.step, n.alter, noteNames);
+}
+
 /** Name shown on a white key in the locale's naming system. */
 export function whiteKeyName(midi, noteNames) {
 	const n = spellMidi(midi);
@@ -42,7 +48,8 @@ export function renderStaticKeyboard({ low, high, highlight = [], noteNames, sho
 		const cls = ["key", k.black ? "key-black" : "key-white", k.black ? `pos-${k.pos}` : "", marked ? "is-target" : ""].filter(Boolean).join(" ");
 		// The ✓ is drawn by CSS (.key.is-target .key-mark::before), as on the interactive keys.
 		const mark = marked ? '<span class="key-mark"></span>' : "";
-		const name = !k.black && showNames ? `<span class="key-name">${escapeXml(whiteKeyName(k.midi, noteNames))}</span>` : "";
+		// Black-key names are in the page but shown only with the setting on ([data-black-names]).
+		const name = showNames ? `<span class="key-name">${escapeXml(k.black ? blackName(k.midi, "sharp", noteNames) : whiteKeyName(k.midi, noteNames))}</span>` : "";
 		const c4 = k.midi === MIDDLE_C ? '<span class="key-c4"></span>' : "";
 		return `<span class="${cls}">${mark}${name}${c4}</span>`;
 	});

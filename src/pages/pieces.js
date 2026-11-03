@@ -3,6 +3,7 @@
 import { idb } from "../core/store.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el } from "./common.js";
+import { renderPieceStatuses } from "./piece-status.js";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_FILES = 50;
@@ -11,6 +12,8 @@ const { t } = ctx;
 const input = $("#import-file");
 const status = $("#import-status");
 const list = $("#my-pieces");
+renderPieceStatuses(ctx);
+addEventListener("nt-progress", () => renderPieceStatuses(ctx));
 
 function kindOf(bytes, name) {
 	if (bytes[0] === 0x4d && bytes[1] === 0x54 && bytes[2] === 0x68 && bytes[3] === 0x64) return "midi";

@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PIECES } from "../../src/content/catalog.js";
-import { melodySteps, parseMelody, toMusicXml } from "../../src/core/notation.js";
+import { pieceSteps, toMusicXml } from "../../src/core/notation.js";
 import { midiOf, parseNoteKey } from "../../src/core/notes.js";
 import { encodeSmf } from "../../src/core/smf.js";
 import { zipStore } from "../../src/core/zip.js";
@@ -162,8 +162,9 @@ export function flows(open) {
 			const page = await open("/kappaleet/ukko-nooa/", { mode: "granted" });
 			await page.waitForSelector("#score svg", { timeout: 15000 });
 			await page.click("text=Harjoittele >> nth=-1");
-			const steps = melodySteps(parseMelody(PIECES.find((p) => p.id === "ukko-nooa").right));
-			for (const s of steps) for (const m of s.notes) await press(page, m);
+			// Both hands (Ukko Nooa has a bass line since 1.3.0): every note of every step.
+			const steps = pieceSteps(PIECES.find((p) => p.id === "ukko-nooa"));
+			for (const s of steps) for (const n of s.notes) await press(page, n.midi);
 			await page.waitForFunction(() => /Valmis/.test(document.querySelector(".feedback")?.textContent || ""), null, { timeout: 5000 });
 		},
 		"pieces: import MIDI, MusicXML and MXL": async () => {
@@ -348,10 +349,182 @@ export function flows(open) {
 		},
 		"settings: note colours colour the keys": async () => {
 			const page = await open("/asetukset/", { mode: "granted" });
-			await page.check("text=Värit nuoteille");
+			await page.selectOption("#settings-colors", "names");
 			await page.goto(page.url().replace(/\/asetukset\/.*/, "/harjoitus/?l=treble-c4-g4&m=single"));
 			await page.waitForSelector(".kbd .key-white[data-step='C']");
 			assert.match(await page.locator(".kbd .key-white[data-step='C']").first().evaluate((el) => getComputedStyle(el).boxShadow), /inset/);
+		},
+		"explore: a note, both names of a black key, an interval and a chord": async () => {
+			const page = await open("/tutki-nuotteja/", { mode: "granted" });
+			await page.waitForSelector(".explore-names");
+			const hold = (notes) => page.evaluate((ms) => ms.forEach((m) => window.__fakeMidi.press(m)), notes);
+			const lift = (notes) => page.evaluate((ms) => ms.forEach((m) => window.__fakeMidi.release(m)), notes);
+			await hold([60]);
+			await page.waitForFunction(() => /^C4$/.test(document.querySelector(".explore-names").textContent));
+			assert.match(await page.textContent("#app-root"), /keski-C/);
+			await lift([60]);
+			await hold([66]);
+			await page.waitForFunction(() => /Fis4 \/ Ges4/.test(document.querySelector(".explore-names").textContent));
+			await lift([66]);
+			await hold([60, 64]);
+			await page.waitForFunction(() => /suuri terssi/.test(document.querySelector("#app-root").textContent));
+			await hold([67]);
+			await page.waitForFunction(() => /C-duuri, perusmuoto/.test(document.querySelector("#app-root").textContent));
+			await lift([60, 64, 67]);
+			await hold([64, 67, 72]);
+			await page.waitForFunction(() => /C-duuri, 1\. käännös/.test(document.querySelector("#app-root").textContent));
+		},
+		"phrases: a level 1 round with the keyboard only": async () => {
+			const page = await open("/fraasit/", { mode: "granted" });
+			await page.click("button:has-text('Aloita fraasit')");
+			await page.waitForSelector("section.question[data-key]");
+			const total = Number((await page.textContent(".drill-head .count")).match(/\/(\d+)/)[1]);
+			assert.equal(total, 40, "five phrases of eight quarter notes on level 1");
+			for (let i = 1; i <= total; i++) {
+				await waitCount(page, i);
+				await press(page, keyToMidi(await page.getAttribute("section.question", "data-key")));
+			}
+			await page.waitForSelector("#summary-h");
+			assert.match(await page.textContent("dl.facts"), /100/);
+			assert.match(await page.textContent("dl.facts"), /40/, "the longest run");
+			assert.match(page.url(), /level=1/);
+		},
+		"play-along: the app plays the bass on the instrument while you practise the right hand": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted", settings: { midiOut: "fake-out" } });
+			await page.waitForSelector("#score svg .st-barnum");
+			assert.equal(await page.locator("#score svg").nth(1).locator(".st-barnum").textContent(), "5", "bar numbers on each line");
+			await page.check("input[name='hands'][value='right']");
+			await page.click("text=Harjoittele >> nth=-1");
+			await press(page, 60);
+			await page.waitForFunction(() => window.__fakeMidi.sent.some((m) => m[0] === 0x90 && m[1] === 48), null, { timeout: 3000 });
+			assert.ok(!(await page.evaluate(() => window.__fakeMidi.sent.some((m) => m[0] === 0x90 && m[1] === 60))), "the player's own note is not sent back");
+		},
+		"piece: Listen goes to the MIDI output and Stop silences it": async () => {
+			const page = await open("/kappaleet/tuiki-tuiki-tahtonen/", { mode: "granted", settings: { midiOut: "fake-out" } });
+			await page.waitForSelector("#score svg");
+			await page.click("text=Kuuntele >> nth=-1");
+			await page.waitForFunction(() => window.__fakeMidi.sent.some((m) => m[0] === 0x90 && m[1] === 60), null, { timeout: 3000 });
+			await page.click("text=Pysäytä");
+			await page.waitForFunction(() => window.__fakeMidi.sent.some((m) => m[0] === 0x80 && m[1] === 60), null, { timeout: 3000 });
+		},
+		"piece: tempo mode summary, score, history and the card status": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector("#score svg");
+			await page.check("input[name='mode'][value='tempo']");
+			await page.click("button[aria-label='Tahti 1']");
+			await page.click("button[aria-label='Tahti 1']");
+			assert.equal(await page.inputValue("#to-bar"), "1");
+			await page.fill("#piece-tempo", "160");
+			await page.click("text=Harjoittele >> nth=-1");
+			await page.waitForFunction(() => /Ajallaan \d+, aikaisin/.test(document.querySelector(".feedback")?.textContent || ""), null, { timeout: 15000 });
+			assert.match(await page.textContent(".feedback"), /Pisteet: 0\/100/);
+			await page.waitForSelector("text=Viimeiset harjoitukset");
+			assert.equal(await page.locator("section[aria-labelledby='history-h'] tbody tr").count(), 1);
+			await page.goto(page.url().replace(/\/kappaleet\/.*/, "/kappaleet/"));
+			await page.waitForFunction(() => /Soitettu 1 kertaa/.test(document.querySelector("[data-piece='ukko-nooa'] [data-status]")?.textContent || ""));
+		},
+		"piece: the bar strip chooses bars 3 to 5 and follows the fields": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector(".bar-strip");
+			await page.click("button[aria-label='Tahti 3']");
+			await page.click("button[aria-label='Tahti 5']");
+			assert.equal(await page.inputValue("#from-bar"), "3");
+			assert.equal(await page.inputValue("#to-bar"), "5");
+			assert.equal(await page.getAttribute("button[aria-label='Tahti 4']", "aria-pressed"), "true");
+			assert.equal(await page.getAttribute("button[aria-label='Tahti 6']", "aria-pressed"), "false");
+			await page.fill("#to-bar", "7");
+			assert.equal(await page.getAttribute("button[aria-label='Tahti 6']", "aria-pressed"), "true");
+		},
+		"piece: transposed to G major, then back": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector("#piece-key");
+			await page.selectOption("#piece-key", "1");
+			await page.waitForFunction(() => /Tahti 1: G4 neljäsosa/.test(document.querySelector("#piece-text ol")?.textContent || ""));
+			assert.ok((await page.locator("#score .st-sig").count()) > 0, "a key signature is drawn");
+			assert.match(await page.textContent("#score-figure figcaption"), /G-duuri/);
+			await page.reload();
+			await page.waitForFunction(() => /G-duuri/.test(document.querySelector("#score-figure figcaption")?.textContent || ""), null, { timeout: 5000 });
+			await page.selectOption("#piece-key", "0");
+			await page.waitForFunction(() => /Tahti 1: C4 neljäsosa/.test(document.querySelector("#piece-text ol")?.textContent || ""));
+		},
+		"speed reading: right answers shorten the time, three misses end it": async () => {
+			const page = await open("/pikaluku/", { mode: "granted" });
+			await page.click("button:has-text('Aloita pikaluku')");
+			// The next note comes a moment after an answer: wait for the staff to change each time.
+			const current = () => page.$eval("#app-root .staff-box", (el) => el.innerHTML);
+			const nextNote = async (before) => page.waitForFunction((b) => document.querySelector("#app-root .staff-box").innerHTML !== b, before, { timeout: 5000 });
+			for (let i = 1; i <= 3; i++) {
+				await page.waitForSelector("#app-root .st-item.is-current[data-midi]");
+				const before = await current();
+				await press(page, Number(await page.getAttribute("#app-root .st-item.is-current[data-midi]", "data-midi")));
+				await page.waitForFunction((n) => (document.querySelector(".drill-head .count")?.textContent || "").includes(`Luettu: ${n}`), i);
+				await nextNote(before);
+			}
+			for (let i = 0; i < 3; i++) {
+				const before = await current();
+				const target = Number(await page.getAttribute("#app-root .st-item.is-current[data-midi]", "data-midi"));
+				await press(page, target === 21 ? 22 : 21);
+				if (i < 2) await nextNote(before);
+			}
+			await page.waitForSelector("#speed-result-h");
+			assert.match(await page.textContent("dl.facts"), /3/);
+		},
+		"wake lock and full screen while a piece runs": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector("#score svg");
+			await page.click("text=Harjoittele >> nth=-1");
+			await page.waitForFunction(() => window.__fakeWake.log.includes("request"));
+			await page.click("text=Pysäytä");
+			await page.waitForFunction(() => window.__fakeWake.log.includes("release"));
+			await page.click("button:has-text('Koko näyttö')");
+			assert.deepEqual(await page.evaluate(() => window.__fakeFullscreen), ["main"]);
+		},
+		"key lights: the next note goes to the output on the chosen channel": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted", settings: { midiOut: "fake-out", keyLights: { on: true, channel: 4 } } });
+			await page.waitForSelector("#score svg");
+			await page.click("text=Harjoittele >> nth=-1");
+			await page.waitForFunction(() => window.__fakeMidi.sent.some((m) => m[0] === 0x93 && m[1] === 60 && m[2] === 1));
+			await page.click("text=Pysäytä");
+			await page.waitForFunction(() => window.__fakeMidi.sent.some((m) => m[0] === 0x83 && m[1] === 60));
+		},
+		"colours by finger, the old true setting, names on black keys": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted", settings: { noteColors: "fingers", namesOnBlackKeys: true } });
+			await page.waitForSelector("#score svg");
+			await page.click("text=Harjoittele >> nth=-1");
+			await page.waitForSelector(".key.is-target[data-finger]");
+			assert.match(await page.locator(".key.is-target[data-finger]").first().evaluate((el) => getComputedStyle(el).boxShadow), /inset/);
+			assert.equal(await page.locator(".key-black .key-name").first().isVisible(), true, "black-key names show");
+			assert.match(await page.locator(".key-black .key-name").first().textContent(), /^(Cis|Dis|Fis|Gis|Ais)$/);
+			const old = await open("/", { mode: "granted", settings: { noteColors: true } });
+			assert.equal(await old.getAttribute("html", "data-note-colors"), "names", "1.2.0 stored true");
+		},
+		"control keys: taught on the Devices page, they start, restart and stop a piece": async () => {
+			const page = await open("/laitteet/", { mode: "granted" });
+			await page.click("button:has-text('Valitse ohjauskoskettimet')");
+			await press(page, 21);
+			await page.waitForFunction(() => /alusta/.test(document.querySelector("#app-root").textContent));
+			await press(page, 23);
+			await page.waitForFunction(() => /A0 aloittaa ja pysäyttää, H0 aloittaa alusta/.test(document.querySelector("#app-root").textContent));
+			await page.goto(page.url().replace(/\/laitteet\/.*/, `/kappaleet/${"ukko-nooa"}/`));
+			await page.waitForSelector("#score svg");
+			await page.waitForFunction(() => document.getElementById("device-status")?.dataset.state === "on");
+			await press(page, 21);
+			await page.waitForSelector("button:has-text('Aloita alusta')");
+			await press(page, 23);
+			await page.waitForSelector("button:has-text('Aloita alusta')");
+			assert.equal(await page.locator(".feedback .bad").count(), 0, "control keys are not wrong notes");
+			await press(page, 21);
+			await page.waitForSelector("button:has-text('Harjoittele') >> nth=-1");
+		},
+		"falling-note labels change the drawing": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted", settings: { fallingNotes: true } });
+			await page.waitForSelector("canvas.falling");
+			await page.waitForTimeout(200);
+			const before = await page.evaluate(() => document.querySelector("canvas.falling").toDataURL());
+			await page.selectOption("#piece-falling-labels", "names");
+			await page.waitForTimeout(200);
+			const after = await page.evaluate(() => document.querySelector("canvas.falling").toDataURL());
+			assert.notEqual(after, before, "names are drawn in the bars");
 		},
 		"piece: the start button restarts while practice runs": async () => {
 			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
