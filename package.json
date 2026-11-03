@@ -1,0 +1,54 @@
+{
+  "name": "nuottitreeni",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Free, privacy-first piano note trainer for the browser: learn to read sheet music with any MIDI keyboard. Works offline.",
+  "license": "MIT",
+  "author": "Markus Silvo (https://markussilvo.fi)",
+  "homepage": "https://piano.markussilvo.fi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Markus-web/nuottitreeni.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && wrangler d1 migrations apply DB --local && wrangler dev --port 8797",
+    "test": "node --test tests/unit tests/worker",
+    "test:browser": "node tests/browser/run.mjs",
+    "check": "npm test && npm run build && wrangler deploy --dry-run --outdir .wrangler/dry-run && npm run test:browser",
+    "db:migrate": "wrangler d1 migrations apply DB --remote",
+    "deploy": "npm run db:migrate && wrangler deploy",
+    "prove:live": "node scripts/prove-live.mjs",
+    "build:samples": "node scripts/build-piano-samples.mjs",
+    "build:fonts": "node scripts/build-fonts.mjs",
+    "build:icons": "bash scripts/build-icons.sh",
+    "build:og": "node scripts/build-og.mjs",
+    "build:photos": "node scripts/build-photos.mjs",
+    "vendor:osmd": "node scripts/vendor-osmd.mjs",
+    "vendor:icons": "node scripts/vendor-phosphor.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "wrangler": "4.153.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "D1 database for the optional **sync codes**. Created for you; the first migration also creates a random rate-limit salt, so no secret is needed."
+      },
+      "OPERATOR_NAME": {
+        "description": "Who runs this copy, shown on the privacy and about pages (your name or organisation). Leave empty to show a generic notice."
+      },
+      "OPERATOR_CONTACT": {
+        "description": "Contact for privacy and accessibility questions: an email address or a URL. Shown on the privacy page."
+      },
+      "SYNC_ENABLED": {
+        "description": "`true` lets visitors create sync codes stored in your D1 database. Set to `false` to offer only local storage and file export/import."
+      }
+    }
+  }
+}

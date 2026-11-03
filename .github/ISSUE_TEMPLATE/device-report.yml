@@ -1,0 +1,55 @@
+name: Device report
+description: Tell us how your keyboard or MIDI device works with the app (it helps others with the same device).
+labels: ["device-support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Devices page in the app can write most of this for you. Open it, play a few notes, then press "Copy the report" and paste it below.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Maker and model, for example "Yamaha DGX-205".
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - USB cable
+        - Bluetooth paired in the operating system
+        - Bluetooth without pairing (the app's experimental connection)
+        - USB without a driver (the app's experimental connection)
+        - MIDI cable through an interface
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and browser
+      description: For example "macOS 15, Chrome 142" or "Android 15, Chrome".
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Does it work?
+      options:
+        - "Yes, everything works"
+        - "Partly (describe below)"
+        - "No"
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Device report from the app
+      description: Paste the report from the Devices page. It contains device names and message types only.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Drivers you installed, settings you changed, anything unusual.

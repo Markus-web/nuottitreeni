@@ -1,0 +1,11 @@
+{
+  "name": "opensheetmusicdisplay",
+  "version": "2.2.1",
+  "license": "BSD-3-Clause",
+  "file": "opensheetmusicdisplay.min.js",
+  "sha256": "224ee5bee61d31ff3d07ade025f931a6cecd394cb54d2e39b1e7af2f0c7f1f5d",
+  "bundles": {
+    "vexflow": "1.2.93",
+    "jszip": "3.10.1"
+  }
+}

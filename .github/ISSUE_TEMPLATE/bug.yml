@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work as it should.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The address of the page, for example https://piano.markussilvo.fi/harjoitus/?l=keys&m=single
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      description: For example "Chrome 142 on Windows 11" or "Safari on iPad".
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Lessons or practice
+        - Rhythm
+        - Pieces or imported files
+        - Keyboard or MIDI device
+        - Sound
+        - Settings, sync, export or import
+        - Accessibility
+        - Text or translation
+        - Something else
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Screenshots, console errors, steps to repeat it.

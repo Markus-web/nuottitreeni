@@ -1,0 +1,39 @@
+// Template configuration used by the "Deploy to Cloudflare" button and by self-hosters.
+// The button provisions the D1 database and writes its real id over the default below.
+// Static files in dist/ are served by the asset layer; the Worker only runs for /api/*.
+// Configuration reference: docs/configuration.md
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nuottitreeni",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-15",
+  "observability": {
+    "enabled": false
+  },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nuottitreeni",
+      "database_id": "4f1c6a3e-2b7d-4e0a-9c5b-8d2e1f3a6b70",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
+  "vars": {
+    "OPERATOR_NAME": "",
+    "OPERATOR_CONTACT": "",
+    "SYNC_ENABLED": "true"
+  },
+  "dev": {
+    "port": 8797
+  }
+}

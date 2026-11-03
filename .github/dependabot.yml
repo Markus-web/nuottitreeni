@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      build-tools:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /tests/browser
+    schedule:
+      interval: weekly
+    groups:
+      browser-tests:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

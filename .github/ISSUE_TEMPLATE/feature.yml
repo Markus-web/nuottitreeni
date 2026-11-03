@@ -1,0 +1,22 @@
+name: Feature idea
+description: Suggest something new or a change to how something works.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would you like to do?
+      description: Describe what you want to practise or achieve, not only the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could the app help?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the existing issues and Discussions.
+          required: true

@@ -1,0 +1,16 @@
+{
+  "_doc": "Writing rules for tests/unit/copy.test.mjs, applied to every UI string (src/content/locales), the legal texts, the licence notes and the Markdown docs. Patterns are JavaScript regex sources, case-insensitive unless caseSensitive is true; lang limits a rule to one locale (Markdown counts as en). Why: plain language for beginners, and no stock phrases that make the text read as machine-written (Wikipedia: Signs of AI writing). See CONTRIBUTING.md, Writing.",
+  "rules": [
+    { "id": "em-dash", "pattern": "—", "note": "Use a comma, period, colon or parentheses." },
+    { "id": "emoji", "pattern": "(?![©®™])\\p{Extended_Pictographic}", "unicode": true, "note": "No emojis. The answer marks are the plain characters U+2713 and U+2717." },
+    { "id": "hype", "pattern": "\\b(vibrant|nestled|groundbreaking|showcasing|boasts|rich tapestry|commitment to|world-class|cutting-edge|state-of-the-art|revolutionary|game[- ]changer|unlock (your|the) (full )?potential|elevate your)\\b" },
+    { "id": "significance", "pattern": "\\b(pivotal|testament to|underscores|highlights the importance|broader landscape|evolving landscape|indelible|setting the stage)\\b" },
+    { "id": "ai-vocab", "pattern": "\\b(delve[sd]?|delving|fostering|garner(s|ed)?|meticulous(ly)?|intricate|intricacies|interplay|holistic|seamless(ly)?|leverag(e|es|ed|ing)|streamlin(e|es|ed|ing)|robust)\\b" },
+    { "id": "sentence-opener", "pattern": "(^|[.!?]\\s+)(Additionally|Moreover|Furthermore|In conclusion|Ultimately),", "caseSensitive": true },
+    { "id": "not-only", "pattern": "\\bnot (only|just) [^.]{1,80}\\bbut (also )?", "note": "Not just X, but Y." },
+    { "id": "chatbot", "pattern": "(I hope this helps|Certainly!|Of course!|Great question|I'd be happy to|Feel free to|Don't hesitate to|rest assured)" },
+    { "id": "fi-cliche", "pattern": "(uudelle tasolle|huippuluok\\w*|ensiluok\\w*|saumato\\w*|kokonaisvaltai\\w*|ei ainoastaan\\b[^.]{0,80}\\bvaan myös|älä epäröi|rohkeasti yhteyttä|vie\\w* \\w+ uudelle)" },
+    { "id": "en-gap", "lang": "en", "pattern": "\\bgaps?\\b", "note": "The staff has lines and spaces. Use 'space'." },
+    { "id": "en-fi-abbrev", "lang": "en", "pattern": "\\(FI\\b", "note": "Write it out: B (Finnish: H)." }
+  ]
+}

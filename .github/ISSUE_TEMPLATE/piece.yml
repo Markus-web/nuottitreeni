@@ -1,0 +1,28 @@
+name: Piece suggestion
+description: Suggest a public-domain melody for the built-in pieces.
+labels: ["piece"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Title and composer
+    validations:
+      required: true
+  - type: textarea
+    id: rights
+    attributes:
+      label: Why is it public domain?
+      description: Traditional melody, or the composer died more than 70 years ago. Built-in pieces must also be our own transcription, not copied from a modern edition.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it suits beginners
+      description: Which notes and rhythms it uses, and which lesson it would follow.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Help
+      options:
+        - label: I can write the transcription myself (see docs/adding-pieces.md).
