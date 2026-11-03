@@ -4,6 +4,22 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-03
+
+Fixes from a second audit pass after 1.2.0.
+
+### Fixed
+
+- **Reduced motion:** the falling notes scrolled smoothly even when the system asks for reduced motion, although the accessibility notes said it was respected (CSS cannot reach a canvas animation). They now move in whole-beat steps in that case.
+- **Accessibility statement:** it said the site has "no moving or flashing parts and no time limits", which has not been true since the optional falling notes (1.1.0). It now names the falling notes, how they stop, and that the main exercises have no time limits; it also says that the optional note colours always come with the names.
+- **Stream section on the Devices page:** it reused the stream page's own text, which says "open this page in its own window" (on the Devices page that pointed at the wrong page). It has its own text now, and the help answer says where the stream view is.
+- **Settings page:** the footer showed a second theme choice under the one in Settings; the footer one is hidden there.
+- **Pieces page:** pieces are listed easiest first (by level), so a level 1 piece no longer appears after level 2 pieces.
+- **Piece steps:** "practise one hand at a time" is now said only for pieces with two hands.
+- **Glossary:** fingering and solfège moved next to the terms they belong with; new entries for minor, metronome and count-in, words the app uses without explaining them.
+- **Help:** "Does it cost anything?" now mentions copies on other servers and your own computer, not only Cloudflare.
+- **Browsers without MIDI:** the message on the Devices page listed the on-screen keys and the computer keyboard but not the microphone, which is the main option in those browsers (Safari, iPhone, iPad).
+
 ## [1.2.0] - 2026-11-03
 
 A release about being easy to start and easy to follow: a shorter header, steps and worked examples on every exercise, some colour, and the half-finished features from 1.1.0 completed. `main` now takes changes only through pull requests that passed CI.
@@ -126,7 +142,8 @@ First public release.
 - Phosphor icons in the menu and on buttons, and four photos from Unsplash with credits under each photo.
 - Deploy to Cloudflare button, documentation for self-hosting, and a test suite (unit, Worker API, browser flows, AAA matrix, SEO crawl, Lighthouse budgets).
 
-[Unreleased]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/Markus-web/nuottitreeni/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Markus-web/nuottitreeni/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Markus-web/nuottitreeni/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Markus-web/nuottitreeni/releases/tag/v1.0.0

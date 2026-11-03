@@ -117,7 +117,7 @@ export default {
 					h: "Nykytila",
 					p: [
 						"Jokainen julkaistava versio testataan automaattisesti: axe-core-säännöt tasoille A, AA ja AAA, tekstin kontrasti vähintään 7:1, kohteiden koko vähintään 44 x 44 pikseliä, näppäimistön kohdistus, 320 pikselin leveys ilman vaakavieritystä, tekstin välistyksen muuttaminen, korkean kontrastin tila ja koko harjoituskierros pelkällä näppäimistöllä.",
-						"Kaikki toiminnot toimivat näppäimistöllä. Nuottien ja koskettimien tilaa ei kerrota pelkällä värillä. Sivustolla ei ole liikkuvia tai vilkkuvia osia eikä aikarajoja.",
+						"Kaikki toiminnot toimivat näppäimistöllä. Nuottien ja koskettimien tilaa ei kerrota pelkällä värillä: myös valinnaiset nuottien värit näkyvät aina nimien kanssa. Sivustolla ei ole vilkkuvia osia. Ainoa liikkuva osa on kappaleiden putoavat nuotit, jotka ovat oletuksena pois päältä, liikkuvat vain kappaleen soidessa ja pysähtyvät Pysäytä-painikkeesta. Perusharjoituksissa ei ole aikarajoja.",
 					],
 				},
 				{
@@ -241,7 +241,7 @@ export default {
 					h: "Current status",
 					p: [
 						"Every release is tested automatically: axe-core rules for levels A, AA and AAA, text contrast of at least 7:1, targets of at least 44 by 44 pixels, keyboard focus, a 320 pixel width without horizontal scrolling, changed text spacing, high contrast mode, and a whole practice round with the keyboard only.",
-						"Everything works with a keyboard. The state of notes and keys is never shown by colour alone. The site has no moving or flashing parts and no time limits.",
+						"Everything works with a keyboard. The state of notes and keys is never shown by colour alone: the optional note colours always appear with the names. Nothing on the site flashes. The only moving part is the falling-notes view on pieces, which is off by default, moves only while a piece plays and stops with the Stop button. The main exercises have no time limits.",
 					],
 				},
 				{

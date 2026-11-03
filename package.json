@@ -1,6 +1,6 @@
 {
   "name": "nuottitreeni",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Free, privacy-first piano note trainer for the browser: learn to read sheet music with any MIDI keyboard. Works offline.",
   "license": "MIT",

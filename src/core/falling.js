@@ -79,11 +79,17 @@ export class FallingNotes {
 		g.fillRect(0, h - 2, w, 2);
 	}
 
-	/** Animate while playing: getBeat() returns the beat now at the bottom edge. */
+	/**
+	 * Animate while playing: getBeat() returns the beat now at the bottom edge. With reduced
+	 * motion (system setting) the view jumps once per beat instead of scrolling smoothly.
+	 */
 	play(getBeat) {
 		this.stop();
+		const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+		let shown = null;
 		const frame = () => {
-			this.draw(getBeat());
+			const beat = reduce ? Math.floor(getBeat()) : getBeat();
+			if (beat !== shown) this.draw((shown = beat));
 			this.raf = requestAnimationFrame(frame);
 		};
 		frame();
