@@ -219,6 +219,8 @@ export async function designSlop(page) {
 			if (cs.animationIterationCount === "infinite" && cs.animationName !== "none") out.push("infinite animation");
 			if (/^H[1-3]$/.test(el.tagName) && parseFloat(cs.fontSize) < bodySize) out.push(`heading smaller than body: ${el.tagName}`);
 		}
+		// A key mark drawn twice: text in the mark span and the CSS ::before mark as well.
+		for (const m of document.querySelectorAll(".key-mark")) if (m.textContent.trim() && getComputedStyle(m, "::before").content !== "none") out.push("key mark drawn twice");
 		// Broken output: "null"/"undefined"/"NaN" as visible text, or a {placeholder} left in a string.
 		const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 		for (let node = walker.nextNode(); node; node = walker.nextNode()) {

@@ -9,8 +9,9 @@ import { octaveRange, renderStaticKeyboard } from "../core/keyboard-layout.js";
 import { bars, parseMelody, systems, toStaffItems } from "../core/notation.js";
 import { noteName } from "../core/notes.js";
 import { renderStaff } from "../core/staff.js";
+import { workedExample } from "../core/worked-example.js";
 import { esc } from "./layout.js";
-import { arrowLeft, arrowRight, ear, musicNote, musicNotes, pianoKeys, textAa } from "../content/icons.js";
+import { arrowLeft, arrowRight, bookOpen, ear, metronome, musicNote, musicNotes, notebook, pianoKeys, shuffle, textAa } from "../content/icons.js";
 import { svgIcon } from "../core/icon.js";
 
 const MODE_ICONS = { single: musicNote, row: musicNotes, ear, name: textAa, quiz: musicNote, tap: pianoKeys };
@@ -116,17 +117,26 @@ export function homePage(ctx) {
 		jsonLd: [appLd],
 		body: `<h1>${esc(t("home.title"))}</h1>
 <p class="lead">${esc(t("home.intro"))}</p>
+<section aria-labelledby="start-h" data-section="lessons"><h2 id="start-h">${esc(t("home.startHeading"))}</h2>
+<ol class="steps">
+<li><h3>${esc(t("home.step1Title"))}</h3><p>${esc(t("home.step1"))}</p></li>
+<li><h3>${esc(t("home.step2Title"))}</h3><p>${esc(t("home.step2"))}</p><p><a class="btn btn-primary" href="${site.path("lesson", loc, PITCH_LESSONS[0].id)}">${svgIcon(arrowRight)}${esc(t("home.step2Link"))}</a></p></li>
+<li><h3>${esc(t("home.step3Title"))}</h3><p>${esc(t("home.step3"))}</p></li>
+</ol></section>
 ${photo(ctx, "keys")}
-<section aria-labelledby="practice-h"><h2 id="practice-h">${esc(t("home.practiceHeading"))}</h2>
+<section aria-labelledby="practice-h"><h2 id="practice-h">${svgIcon(notebook, "section-icon")}${esc(t("home.practiceHeading"))}</h2>
 <p id="practice-summary">${esc(t("home.practiceEmpty"))}</p></section>
-<section aria-labelledby="pitch-h"><h2 id="pitch-h">${esc(t("home.pitchHeading"))}</h2>
+<section aria-labelledby="pitch-h" data-section="lessons"><h2 id="pitch-h">${svgIcon(bookOpen, "section-icon")}${esc(t("home.pitchHeading"))}</h2>
 <p>${esc(t("home.pitchIntro"))}</p>
 <ol class="cards" id="lesson-cards">${lessonCards}</ol>
+</section>
+<section aria-labelledby="free-h" data-section="free"><h2 id="free-h">${svgIcon(shuffle, "section-icon")}${esc(t("free.title"))}</h2>
+<p>${esc(t("free.intro"))}</p>
 <p><a class="standalone" href="${site.path("freePractice", loc)}">${esc(t("free.homeLink"))}${svgIcon(arrowRight)}</a></p></section>
-<section aria-labelledby="rhythm-h"><h2 id="rhythm-h">${esc(t("home.rhythmHeading"))}</h2>
+<section aria-labelledby="rhythm-h" data-section="rhythm"><h2 id="rhythm-h">${svgIcon(metronome, "section-icon")}${esc(t("home.rhythmHeading"))}</h2>
 <p>${esc(t("home.rhythmIntro"))}</p>
 <ul class="cards" id="rhythm-cards">${rhythmCards}</ul></section>
-<section aria-labelledby="pieces-h"><h2 id="pieces-h">${esc(t("home.piecesHeading"))}</h2>
+<section aria-labelledby="pieces-h" data-section="pieces"><h2 id="pieces-h">${svgIcon(musicNotes, "section-icon")}${esc(t("home.piecesHeading"))}</h2>
 <p>${esc(t("home.piecesIntro"))}</p>
 <ul class="cards">${pieceCards}</ul>
 <p><a class="standalone" href="${site.path("pieces", loc)}">${esc(t("home.piecesLink"))}${svgIcon(arrowRight)}</a></p></section>`,
@@ -180,6 +190,7 @@ export function lessonPage(ctx, lesson, index) {
 <p class="lead">${esc(tx.description)}</p>
 <div class="learn">${para(tx.learn)}</div>
 ${lessonFigure(ctx, lesson)}
+${lesson.worked ? `<section aria-labelledby="example-h"><h2 id="example-h">${esc(t("guide.example"))}</h2>${workedExample(lesson.worked, { t, noteNames: dict.meta.noteNames, keySig: lesson.exampleKeySig ? KEY_SIGS[lesson.exampleKeySig].alters : null })}</section>` : ""}
 <p class="notice" id="not-yet" hidden></p>
 <h2>${esc(t("guide.chooseMode"))}</h2>
 <ul class="modes">${modes}</ul>

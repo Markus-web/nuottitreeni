@@ -24,7 +24,15 @@ Each page embeds a small JSON block (`#nt-config`) with the page key, locale, as
 
 ## Browser code
 
-`src/pages/common.js` boots every page: it loads the locale, applies the theme, creates the shared objects and returns a context.
+`src/pages/common.js` boots every page: it loads the locale, applies the theme, creates the shared objects and returns a context. It also runs the device row in the header (status, one "Connect instrument" button that uses Web MIDI or, without it, the microphone, and an unplug message), the offline line in the footer, and `howTo()`, the "How to practise" box that every practice page shows (open on the first visit to each kind of practice, remembered in the `seenHelp` setting).
+
+`src/pages/theme-init.js` runs before the first paint and sets the chosen theme and the note colours (`data-theme`, `data-note-colors` on `<html>`), so neither flashes.
+
+### Layout and colour
+
+- Header: the brand, four main links (lessons, pieces, practice log, settings), the language link, and the device row. Everything else is in the footer, in two groups (`FOOTER` in `src/templates/layout.js`).
+- Section colours: the layout sets `data-section` on `<body>` (lessons green, rhythm blue, pieces amber, free practice violet); the home page sets it per section. They colour card top edges, section icons, step numbers and the current-page underline (`--section` in `main.css`).
+- Note colours (setting, off by default): `--n-c` ... `--n-b` on the white keys (`data-step`), the falling notes and the name buttons. The names always stay.
 
 | Module | Role |
 |---|---|
@@ -38,6 +46,8 @@ Each page embeds a small JSON block (`#nt-config`) with the page key, locale, as
 | `core/fingering.js` | Suggested right-hand fingering (five-finger positions chosen over the whole melody) |
 | `core/falling.js` | Optional falling-notes view on a canvas above the on-screen keyboard |
 | `core/explain.js` | Staff position maths behind the miss explanations |
+| `core/worked-example.js` | The "Example, step by step" walk-through (staff, reading steps from `explain.js`, the key on one octave), shared by the lesson guides (build) and the practice pages |
+| `core/keyboard-layout.js` | Key layout for the on-screen and static keyboards; keyboard sizes, known models (DGX-205/203: 76 keys) and the playable range used by the range warning on pieces |
 | `core/progress.js` | Progress format v1: record, merge, validate, aggregate (shared with the Worker) |
 | `core/store.js` | `localStorage` and IndexedDB access, guarded for blocked storage |
 | `core/recorder.js` | Automatic MIDI recordings with idle detection |

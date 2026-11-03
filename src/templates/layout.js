@@ -1,22 +1,30 @@
 // Page shell used by the build for every HTML page: head (SEO, social, preloads, config),
 // header with navigation and device status, footer. Output is a complete HTML string.
-import { bookOpen, code, gear, githubLogo, house, microphone, musicNotes, notebook, pianoKeys, plugs, question, translate } from "../content/icons.js";
+import { code, gear, githubLogo, house, microphone, musicNotes, notebook, pianoKeys, plugs, translate } from "../content/icons.js";
 import { svgIcon } from "../core/icon.js";
 import { escapeXml as esc } from "../core/staff.js";
 
 export { esc };
 
-/** Navigation entries: page key, label key, icon. Lesson/rhythm/practice pages mark "home" current. */
+/**
+ * Main navigation: the four things people do (page key, label key, icon). Lesson, rhythm and
+ * practice pages mark "home" (the lesson path) current. Devices sits in the device row, and the
+ * reference pages are in the footer, so the header stays short on a phone.
+ */
 const NAV = [
 	["home", "nav.home", house],
 	["pieces", "nav.pieces", musicNotes],
 	["log", "nav.log", notebook],
-	["devices", "nav.devices", plugs],
 	["settings", "nav.settings", gear],
-	["glossary", "nav.glossary", bookOpen],
-	["help", "nav.help", question],
+];
+/** Footer groups: heading key, then [page key, label key]. */
+const FOOTER = [
+	["footer.practiceHeading", [["devices", "nav.devices"], ["freePractice", "free.title"], ["help", "nav.help"], ["glossary", "nav.glossary"]]],
+	["footer.siteHeading", [["about", "footer.about"], ["privacy", "footer.privacy"], ["accessibility", "footer.accessibility"], ["licenses", "footer.licenses"]]],
 ];
 const NAV_SECTION = { lesson: "home", rhythm: "home", practice: "home", freePractice: "home", rhythmPractice: "home", piece: "pieces", myPiece: "pieces" };
+/** Section colour per page (body data-section, see main.css); pages not listed use the accent. */
+const COLOR_SECTION = { home: "lessons", lesson: "lessons", practice: "lessons", rhythm: "rhythm", rhythmPractice: "rhythm", pieces: "pieces", piece: "pieces", myPiece: "pieces", freePractice: "free" };
 
 function jsonScript(type, data, id) {
 	// "<" escaped so the JSON can never close the script element.
@@ -114,17 +122,16 @@ export function layout(ctx, page) {
 		? esc(t("common.operator", { name: cfg.operatorName }))
 		: `<span data-operator-line>${esc(t("common.operatorUnknown"))}</span>`;
 
+	const footerLink = ([key, label]) => `<li><a href="${site.path(key, loc)}"${page.key === key ? ' aria-current="page"' : ""}>${esc(t(label))}</a></li>`;
+	const source = `<li><a href="${esc(cfg.sourceUrl)}">${svgIcon(/^https:\/\/github\.com\//.test(cfg.sourceUrl) ? githubLogo : code)}${esc(t("footer.source"))}</a></li>`;
 	const footer = `<footer class="site-footer"><div class="wrap">
-<nav aria-label="${esc(t("common.footerNav"))}"><ul>
-<li><a href="${site.path("about", loc)}">${esc(t("footer.about"))}</a></li>
-<li><a href="${site.path("privacy", loc)}">${esc(t("footer.privacy"))}</a></li>
-<li><a href="${site.path("accessibility", loc)}">${esc(t("footer.accessibility"))}</a></li>
-<li><a href="${site.path("licenses", loc)}">${esc(t("footer.licenses"))}</a></li>
-<li><a href="${esc(cfg.sourceUrl)}">${svgIcon(/^https:\/\/github\.com\//.test(cfg.sourceUrl) ? githubLogo : code)}${esc(t("footer.source"))}</a></li>
-</ul></nav>
+<nav class="footer-nav" aria-label="${esc(t("common.footerNav"))}">${FOOTER.map(
+		([heading, links], i) => `<div><h2 class="footer-heading">${esc(t(heading))}</h2><ul>${links.map(footerLink).join("")}${i === FOOTER.length - 1 ? source : ""}</ul></div>`,
+	).join("")}</nav>
 <p>${operatorLine} ${esc(t("common.openSource"))}. ${esc(t("about.version", { version: cfg.version }))}</p>
 <div class="footer-tools" hidden data-theme-tools><label for="theme-select">${esc(t("theme.label"))}</label>
 <select id="theme-select"><option value="system">${esc(t("theme.system"))}</option><option value="dark">${esc(t("theme.dark"))}</option><option value="light">${esc(t("theme.light"))}</option></select></div>
+<p class="footer-note" data-offline-note>${esc(t("common.offlineReady"))}</p>
 </div></footer>`;
 
 	const header = `<header class="site-header"><div class="wrap header-row">
@@ -134,8 +141,8 @@ ${langLinks}
 </div>
 <div class="wrap device-row">
 <p class="device-status" id="device-status" role="status" data-state="off">${esc(t("device.statusNone"))}</p>
-<button type="button" class="btn" id="mic-toggle" aria-pressed="false">${svgIcon(microphone)}${esc(t("device.mic"))}</button>
-<button type="button" class="btn" id="device-connect" hidden>${svgIcon(plugs)}${esc(t("device.connect"))}</button>
+<button type="button" class="btn btn-primary" id="device-connect" data-mode="midi">${svgIcon(plugs, "icon-midi")}${svgIcon(microphone, "icon-mic")}<span>${esc(t("device.connectInstrument"))}</span></button>
+<a class="device-more" href="${site.path("devices", loc)}"${section === "devices" ? ' aria-current="page"' : ""}>${esc(t("nav.devices"))}</a>
 </div></header>`;
 
 	return `<!doctype html>
@@ -143,7 +150,7 @@ ${langLinks}
 <head>
 ${head.join("\n")}
 </head>
-<body${page.bodyClass ? ` class="${page.bodyClass}"` : ""}>
+<body${page.bodyClass ? ` class="${page.bodyClass}"` : ""}${COLOR_SECTION[page.key] ? ` data-section="${COLOR_SECTION[page.key]}"` : ""}>
 <a class="skip-link" href="#main">${esc(t("common.skip"))}</a>
 ${page.bare ? "" : header}
 <div class="wrap" id="banners"></div>

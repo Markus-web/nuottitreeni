@@ -26,6 +26,8 @@ const byMiddleC = (n) => ({ ...n, clef: n.octave >= 4 ? "treble" : "bass", writt
  * staff: "treble" | "bass" | "grand" | null (key-name lesson, no staff)
  * pool(keySig) -> notes drilled; example() -> notes shown with names on the guide page;
  * highlight: pitch classes marked on the keyboard in the guide (key-name lesson).
+ * worked: the note read step by step in the "Example" walk-through (guide and practice pages);
+ *   it must be in the pool (for keysig: with the example key signature).
  * modes: which exercise modes the lesson offers.
  */
 export const PITCH_LESSONS = [
@@ -42,6 +44,7 @@ export const PITCH_LESSONS = [
 		staff: "treble",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C3", "B5"],
+		worked: { step: "E", alter: 0, octave: 4, clef: "treble", written: null },
 		pool: () => whiteRange("C4", "G4").map(onClef("treble")),
 	},
 	{
@@ -49,6 +52,7 @@ export const PITCH_LESSONS = [
 		staff: "treble",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C3", "B5"],
+		worked: { step: "A", alter: 0, octave: 4, clef: "treble", written: null },
 		pool: () => whiteRange("C4", "C5").map(onClef("treble")),
 	},
 	{
@@ -56,6 +60,7 @@ export const PITCH_LESSONS = [
 		staff: "treble",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C4", "B6"],
+		worked: { step: "D", alter: 0, octave: 5, clef: "treble", written: null },
 		pool: () => whiteRange("C4", "G5").map(onClef("treble")),
 		example: () => whiteRange("E4", "G5").map(onClef("treble")),
 	},
@@ -64,6 +69,7 @@ export const PITCH_LESSONS = [
 		staff: "bass",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C2", "B4"],
+		worked: { step: "E", alter: 0, octave: 3, clef: "bass", written: null },
 		pool: () => whiteRange("C3", "C4").map(onClef("bass")),
 	},
 	{
@@ -71,6 +77,7 @@ export const PITCH_LESSONS = [
 		staff: "bass",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C2", "B4"],
+		worked: { step: "F", alter: 0, octave: 2, clef: "bass", written: null },
 		pool: () => whiteRange("F2", "C4").map(onClef("bass")),
 		example: () => whiteRange("F2", "B3").map(onClef("bass")),
 	},
@@ -79,6 +86,7 @@ export const PITCH_LESSONS = [
 		staff: "grand",
 		modes: ["single", "row", "ear", "name"],
 		range: ["C2", "B5"],
+		worked: { step: "C", alter: 0, octave: 4, clef: "treble", written: null },
 		pool: () => whiteRange("F2", "G5").map(byMiddleC),
 		example: () => [...whiteRange("C3", "B3").map(onClef("bass")), ...whiteRange("C4", "C5").map(onClef("treble"))],
 	},
@@ -87,6 +95,7 @@ export const PITCH_LESSONS = [
 		staff: "grand",
 		modes: ["single", "row", "name"],
 		range: ["C2", "B6"],
+		worked: { step: "A", alter: 0, octave: 5, clef: "treble", written: null },
 		pool: () => [
 			...whiteRange("A5", "E6").map(onClef("treble")),
 			...whiteRange("A3", "C4").map(onClef("treble")),
@@ -104,6 +113,7 @@ export const PITCH_LESSONS = [
 		staff: "treble",
 		modes: ["single", "row", "name"],
 		range: ["C3", "B5"],
+		worked: { step: "F", alter: 1, octave: 4, clef: "treble", written: 1 },
 		pool: () => {
 			const out = whiteRange("C4", "C5").map(onClef("treble"));
 			for (const n of whiteRange("C4", "B4")) {
@@ -128,6 +138,7 @@ export const PITCH_LESSONS = [
 		range: ["C3", "B5"],
 		keySigs: ["G", "F", "D"],
 		exampleKeySig: "G",
+		worked: { step: "F", alter: 1, octave: 4, clef: "treble", written: null },
 		pool: (keySig) => {
 			const alters = KEY_SIGS[keySig]?.alters ?? {};
 			return whiteRange("C4", "C5").map((n) => ({ ...n, alter: alters[n.step] ?? 0, clef: "treble", written: null }));

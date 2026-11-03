@@ -43,3 +43,21 @@ test("explanation parts", () => {
 	assert.equal(explainParts(keySigF).at(-1).key, "explain.keySig");
 	assert.equal(explainParts({ step: "C", alter: 0, octave: null })[0].key, "explain.keys");
 });
+
+test("worked examples read the note step by step in both languages", async () => {
+	const { workedExample } = await import("../../src/core/worked-example.js");
+	const { makeT } = await import("../../src/core/i18n.js");
+	const fi = (await import("../../src/content/locales/fi.js")).default;
+	const en = (await import("../../src/content/locales/en.js")).default;
+	const e4 = { step: "E", alter: 0, octave: 4, clef: "treble", written: null };
+	const fiHtml = workedExample(e4, { t: makeT(fi), noteNames: "h-system" });
+	assert.match(fiHtml, /Nuotti on 1\. viivalla alhaalta laskien\./);
+	assert.match(fiHtml, /G-avaimen viivastolla se paikka on E\./);
+	assert.match(fiHtml, /Soita siis E\./);
+	assert.equal((fiHtml.match(/is-target/g) ?? []).length, 1, "one key marked");
+	const fsharp = { step: "F", alter: 1, octave: 4, clef: "treble", written: null };
+	const enHtml = workedExample(fsharp, { t: makeT(en), noteNames: "letters", keySig: { F: 1 }, verb: "choose" });
+	assert.match(enHtml, /key signature/i);
+	assert.match(enHtml, /So choose F♯\./);
+	assert.doesNotMatch(enHtml + fiHtml, /\{[a-z]+\}/, "no placeholder left");
+});

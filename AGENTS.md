@@ -11,7 +11,7 @@ Nuottitreeni is a browser app for learning to read sheet music with a MIDI keybo
 1. This file.
 2. [docs/architecture.md](docs/architecture.md): how the build, the browser code and the Worker fit together.
 3. The doc for your task: [docs/adding-lessons.md](docs/adding-lessons.md), [docs/adding-pieces.md](docs/adding-pieces.md), [docs/translations.md](docs/translations.md), [docs/devices.md](docs/devices.md), [docs/api.md](docs/api.md), [docs/privacy-design.md](docs/privacy-design.md).
-4. [docs/testing.md](docs/testing.md) before you run or change tests.
+4. [docs/testing.md](docs/testing.md) before you run or change tests, and [docs/audit-checklist.md](docs/audit-checklist.md) before a release.
 
 ## Layout
 
@@ -41,7 +41,8 @@ npm run dev                                    # local site on http://127.0.0.1:
 npm run serve                                  # built site on http://localhost:8080 without Cloudflare (sync off)
 npm ci --prefix tests/browser --ignore-scripts
 node tests/browser/run.mjs --only flows,aaa    # browser flows and the AAA matrix (needs Chromium)
-node tests/browser/shots.mjs                   # screenshots in tests/browser/artifacts/review/
+node tests/browser/run.mjs --only flows,aaa --grep laitteet   # only matching flows and pages
+node tests/browser/shots.mjs                   # screenshots in tests/browser/artifacts/review/ (--top, --bottom, --settings)
 npm run check                                  # everything CI runs
 ```
 
@@ -52,6 +53,7 @@ All **stable**: a breaking change needs a major version, a migration and a CHANG
 - Ids in `src/content/catalog.js` (lessons, rhythm lessons, pieces, modes) are stored in users' progress and on sync servers. Never rename or remove one; add a new id (`tests/unit/content.test.mjs` guards them).
 - Storage keys `nt.v1.*` and the IndexedDB `nuottitreeni` stores (`src/core/store.js`, listed in [docs/privacy-design.md](docs/privacy-design.md)).
 - Progress format v1 and its limits (`src/core/progress.js`), validated by both the browser and the Worker. The lesson id `free` (free practice) and the mode `name` were added in 1.1.0.
+- Settings and per-device settings keep their names; new ones get defaults in `src/core/store.js` (1.2.0 added `noteColors`, `seenHelp` and the device `keys`).
 - The sync API and error codes in [docs/api.md](docs/api.md), and the sync code format (`src/core/sync-code.js`).
 - URL slugs in the locale files (`slugs`): public links and search results.
 - Build variables and runtime variables in [docs/configuration.md](docs/configuration.md); self-hosters rely on their names.
@@ -63,6 +65,9 @@ The Bluetooth LE MIDI, USB vendor-mode and microphone inputs are **experimental*
 - Do not state music facts without a test. Note names, staff positions, clefs and key signatures are checked against the staff model (`tests/unit/content.test.mjs`, `tests/unit/explain.test.mjs`).
 - Do not add a string to one locale only. Finnish uses H for B and the -is/-es names.
 - Do not write em dashes, emojis or stock phrases (`tests/copy-rules.json`).
+- Do not leave a translation key unused (`tests/unit/repo-hygiene.test.mjs`): finish the feature or remove the key.
+- Do not push to `main`: every change is a pull request that merges after CI ([decision 0011](docs/decisions/0011-stable-main.md)).
+- Do not add a practice mode without its "How to practise" steps (`howto` in the locale files) and a test that names its buttons the same way.
 - Do not add inline styles or scripts (the CSP blocks them), runtime dependencies or requests to other origins.
 - Do not edit generated files by hand: `src/content/icons.js` (`npm run vendor:icons`), `src/assets/photos/` (`npm run build:photos`), fonts, samples, OG images, the vendored notation engine.
 - Do not commit `.dev.vars`, real database ids, account ids or tokens. `wrangler.jsonc` keeps placeholder values for the Deploy button.
@@ -82,7 +87,7 @@ The Bluetooth LE MIDI, USB vendor-mode and microphone inputs are **experimental*
 
 ## Related decisions
 
-[docs/decisions/](docs/decisions/README.md): browser only, sync codes per instance, static assets first, notation engines, input adapters, licences and assets, search defaults for copies.
+[docs/decisions/](docs/decisions/README.md): browser only, sync codes per instance, static assets first, notation engines, input adapters, licences and assets, search defaults for copies, microphone input, piece practice aids, hosting without Cloudflare, stable main through pull requests.
 
 ## Alternatives
 
@@ -98,7 +103,9 @@ None beyond those recorded in the decisions.
 | A build or runtime variable | `docs/configuration.md`, `docs/self-hosting.md` |
 | Device support | `docs/devices.md`, the help texts in the locale files |
 | A third-party part | `THIRD_PARTY_NOTICES.md` and `src/content/licenses.js` |
-| Tests or test commands | `docs/testing.md` |
+| Tests or test commands | `docs/testing.md`, `docs/audit-checklist.md` |
+| A practice mode or its buttons | The `howto` steps in both locale files (they name the buttons) |
+| Colours | Tokens in `main.css` and the pair in `tests/unit/contrast.test.mjs` |
 | A significant design choice | A new file in `docs/decisions/` |
 
 ## Changelog

@@ -40,10 +40,31 @@ export function renderStaticKeyboard({ low, high, highlight = [], noteNames, sho
 	const parts = keys.map((k) => {
 		const marked = highlight.includes(k.midi % 12);
 		const cls = ["key", k.black ? "key-black" : "key-white", k.black ? `pos-${k.pos}` : "", marked ? "is-target" : ""].filter(Boolean).join(" ");
-		const mark = marked ? '<span class="key-mark">✓</span>' : "";
+		// The ✓ is drawn by CSS (.key.is-target .key-mark::before), as on the interactive keys.
+		const mark = marked ? '<span class="key-mark"></span>' : "";
 		const name = !k.black && showNames ? `<span class="key-name">${escapeXml(whiteKeyName(k.midi, noteNames))}</span>` : "";
 		const c4 = k.midi === MIDDLE_C ? '<span class="key-c4"></span>' : "";
 		return `<span class="${cls}">${mark}${name}${c4}</span>`;
 	});
 	return `<div class="kbd-scroll"><div class="kbd" aria-hidden="true">${parts.join("")}</div></div>`;
+}
+
+/**
+ * Common keyboard sizes and the notes they cover with no octave shift (MIDI numbers). Makers
+ * differ for small keyboards; the Devices page shows the range next to the size so the
+ * octave shift can be set to match the instrument.
+ */
+export const KEYBOARD_SIZES = { 25: [48, 72], 37: [48, 84], 49: [36, 84], 61: [36, 96], 76: [28, 103], 88: [21, 108] };
+
+/** Size of a known device from its name (Yamaha DGX-205/203: 76 keys), or null. */
+export function knownKeyboardSize(name = "") {
+	if (/DGX-?20[35]/i.test(name)) return 76;
+	return null;
+}
+
+/** Playable MIDI range of a keyboard of `keys` keys after the device's octave shift and transpose. */
+export function playableRange(keys, octave = 0, transpose = 0) {
+	const r = KEYBOARD_SIZES[keys] ?? KEYBOARD_SIZES[88];
+	const shift = octave * 12 + transpose;
+	return [r[0] + shift, r[1] + shift];
 }

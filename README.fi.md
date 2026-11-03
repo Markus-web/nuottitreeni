@@ -6,16 +6,17 @@ Ilmainen verkkosovellus nuottien lukemisen ja soittamisen harjoitteluun pianolla
 
 [In English](README.md)
 
-![Englanninkielinen etusivu: valikko, lyhyt johdanto ja kuva pianon koskettimista](docs/images/home.png)
+![Englanninkielinen etusivu: valikko, Connect instrument -painike ja kolme aloitusaskelta (How to start)](docs/images/home.png)
 
 ## Mitä sovellus tekee
 
+- **Helppo aloittaa.** Etusivulla on kolme askelta: yhdistä soitin (tai käytä näytön koskettimia), lue oppitunti 1 ja harjoittele. Jokaisen harjoituksen alussa on ensimmäisellä kerralla lyhyt Näin harjoittelet -laatikko: numeroidut askeleet ja esimerkki, jossa nuotti on viivastolla, sen lukeminen selitetään ja soitettava kosketin näytetään.
 - **Oppitunnit nuottien lukemiseen.** Kymmenen lyhyttä oppituntia koskettimien nimistä G- ja F-avaimeen, apuviivoihin, ylennys- ja alennusmerkkeihin ja etumerkintään. Jokainen oppitunti selittää asian selkokielellä ja näyttää esimerkin, sitten harjoitellaan: yksi nuotti kerrallaan, nuottirivi, korvalla tai nimeämällä nuotti painikkeista (soitinta ei tarvita). Kun vastaus menee väärin tai pyydät vihjeen, sovellus kertoo miksi (mikä viiva tai väli ja mitä nuottiavain siitä tekee).
 - **Vapaa harjoitus.** Valitse itse nuottiavain, nuottialue, etumerkintä ja ylennys- ja alennusmerkit, ja harjoittele juuri niitä nuotteja, joita tarvitset.
-- **Nuottien nimet haluamallasi tavalla.** Kirjaimet (C D E), suomalainen H-järjestelmä (C D E ... A H) tai do re mi.
+- **Nuottien nimet haluamallasi tavalla.** Kirjaimet (C D E), suomalainen H-järjestelmä (C D E ... A H) tai do re mi. Halutessasi nuoteille värit (C punainen, D oranssi, E keltainen ja niin edelleen) koskettimissa, putoavissa nuoteissa ja nimipainikkeissa; nimet näkyvät aina myös.
 - **Rytmi.** Nuottiarvot, tauot ja tahtilajit ajastamattomina tehtävinä sekä rytmien soittaminen metronomin kanssa.
 - **Kappaleet.** Yksitoista tekijänoikeuksista vapaata sävelmää Ukko Noasta ja Tuiki tuiki tähtösestä Für Elisen teemaan ja Chopinin e-molli-preludin alkuun, soitettavaksi nuoteista. Sovellus odottaa oikeaa nuottia tai etenee valitsemassasi tempossa ja voi toistaa valittua kohtaa esilaskun kanssa. Nuotteihin saa nimet ja ehdotetun sormituksen, koskettimiston yläpuolelle putoavat nuotit, ja nuotit voi tulostaa. Voit avata myös omia MusicXML-, MXL- tai MIDI-tiedostoja; ne eivät lähde selaimestasi.
-- **Oma soittimesi.** USB- ja Bluetooth-MIDI-soittimet Web MIDIn kautta. Bluetooth LE MIDI -soittimet ja osa vanhemmista USB-soittimista (esimerkiksi Yamahan mallit valmistajan omassa USB-tilassa) voi yhdistää suoraan Chromium-selaimissa (kokeellinen). Näytön koskettimet ja tietokoneen näppäimistö toimivat aina, ja akustinen piano (tai oma äänesi) toimii mikrofonin kautta yksi nuotti kerrallaan; ääni käsitellään selaimessa eikä sitä tallenneta tai lähetetä.
+- **Oma soittimesi.** USB- ja Bluetooth-MIDI-soittimet Web MIDIn kautta. Bluetooth LE MIDI -soittimet ja osa vanhemmista USB-soittimista (esimerkiksi Yamahan mallit valmistajan omassa USB-tilassa) voi yhdistää suoraan Chromium-selaimissa (kokeellinen). Näytön koskettimet ja tietokoneen näppäimistö toimivat aina, ja akustinen piano (tai oma äänesi) toimii mikrofonin kautta yksi nuotti kerrallaan; ääni käsitellään selaimessa eikä sitä tallenneta tai lähetetä. Kerro sovellukselle koskettimistosi koko (Yamaha DGX-205 tunnistetaan), niin kappale kertoo, mitkä nuotit eivät mahdu. Striiminäkymä näyttää soittosi koskettimistona OBS:ää varten.
 - **Ääni, tallenteet ja harjoituspäiväkirja.** Pianoääni selaimessa, automaattiset tallenteet soitostasi (ladattavissa MIDI-tiedostoina), minuutit päivittäin ja valinnainen päivätavoite.
 - **Toimii ilman verkkoa ja asennettavissa.** Ensimmäisen käynnin jälkeen sovellus toimii ilman verkkoyhteyttä, ja sen voi asentaa sovellukseksi.
 - **Saavutettava.** Tavoitteena WCAG 2.2 AAA: kontrasti 7:1, isot painikkeet, kaikki toimii näppäimistöllä, perusharjoituksissa ei aikarajoja ja nuoteille on tekstivastineet. Katso [ACCESSIBILITY.md](ACCESSIBILITY.md).
@@ -79,7 +80,7 @@ Selaintestit (käyttöpolut, WCAG 2.2 AAA, hakukonetarkistus, Lighthouse) tarvit
 
 ## Osallistu
 
-Käännökset, tekijänoikeuksista vapaat kappaleet, korjaukset oppitunteihin, laiteraportit ja koodi ovat tervetulleita. Aloita lukemalla [CONTRIBUTING.md](CONTRIBUTING.md). Kysymykset ja ideat: [Discussions](https://github.com/Markus-web/nuottitreeni/discussions). Tietoturva-asiat: [SECURITY.md](SECURITY.md).
+Käännökset, tekijänoikeuksista vapaat kappaleet, korjaukset oppitunteihin, laiteraportit ja koodi ovat tervetulleita. Aloita lukemalla [CONTRIBUTING.md](CONTRIBUTING.md). Jokainen muutos tulee `main`-haaraan pull requestina, joka on läpäissyt CI:n, joten `main` on aina turvallinen julkaista. Kysymykset ja ideat: [Discussions](https://github.com/Markus-web/nuottitreeni/discussions). Tietoturva-asiat: [SECURITY.md](SECURITY.md).
 
 ## Lisenssi
 

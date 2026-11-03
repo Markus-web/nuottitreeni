@@ -34,9 +34,17 @@ Saved per device name and maker in the browser (`nt.v1.devices`):
 | Local Control off and on | For keyboards with speakers: let only the app make sound, then restore |
 | Silence all notes | Sends All Notes Off on every channel if a note hangs |
 
+## Keyboard size
+
+The Devices page has a keyboard size setting per instrument (25, 37, 49, 61, 76 or 88 keys, with the range each size covers). The Yamaha DGX-205 and DGX-203 are recognised as 76 keys (E1 to G7) by name. When the size is known, a piece page names the notes that do not fit on the keyboard and points to the octave shift setting. Makers differ for small keyboards, so the option shows the range it assumes; set the octave shift to match your instrument.
+
+## Stream view (OBS)
+
+The Devices page builds a link to the stream view: a keyboard strip that lights up as you play, on a green, black or transparent background, with or without note names. Open it in its own browser window and add that window to OBS as a window capture (OBS browser sources cannot use MIDI); remove a green background with a Chroma Key filter. The URL options are `?bg=green|black|transparent`, `&names=1` and `&low=C2&high=C7` (`src/pages/stream.js`).
+
 ## Troubleshooting
 
-- **Nothing happens.** Is the keyboard on and the cable a data cable? Press **Connect MIDI device** and allow MIDI when the browser asks. If you blocked it once, allow MIDI in the site settings (the lock or tune icon in the address bar). The MIDI monitor on the Devices page shows whether anything arrives.
+- **Nothing happens.** Is the keyboard on and the cable a data cable? Press **Connect instrument** at the top of the page (or **Connect MIDI device** on the Devices page) and allow MIDI when the browser asks. If you blocked it once, allow MIDI in the site settings (the lock or tune icon in the address bar). The MIDI monitor on the Devices page shows whether anything arrives.
 - **Double sound or no sound.** If the keyboard has speakers, turn off "sound for incoming notes" in Settings, or mute the keyboard's own sound with Local Control off. If the keyboard is silent, check its volume, the headphone socket and Local Control.
 - **Delay.** Use a USB cable rather than Bluetooth, and wired headphones or speakers: Bluetooth audio often adds 150 ms or more. The delay check on the Devices page measures how quickly messages reach the browser.
 - **"Access denied" or "already in use" with the USB connection.** The operating system's MIDI driver already holds the keyboard (always on Linux, and on Windows with the maker's driver). That is good news: use **Connect MIDI device** (Web MIDI) instead. The experimental USB connection is only for systems where no driver takes the keyboard.
@@ -45,7 +53,7 @@ Saved per device name and maker in the browser (`nt.v1.devices`):
 
 ## Microphone
 
-Turn it on with **Mikrofoni** in the header or on the Devices page; the browser asks for permission once, and the choice is remembered from page to page. Echo cancellation, noise suppression and automatic gain are turned off because they bend the pitch. Notes heard through the microphone are never played back by the app's piano sound (the microphone would hear them again).
+Turn it on with **Use the microphone** on the Devices page. In browsers without Web MIDI (Safari, for example) the **Connect instrument** button at the top of every page starts the microphone instead. The browser asks for permission once, and the choice is remembered from page to page. Echo cancellation, noise suppression and automatic gain are turned off because they bend the pitch. Notes heard through the microphone are never played back by the app's piano sound (the microphone would hear them again).
 
 Tips: one note at a time, a quiet room, the device near the instrument. A note must hold for about 80 ms before it counts; striking the same key again is recognised when the sound gets clearly louder. Chords and very low notes (below about B1) are not recognised. The detector is in `src/core/pitch.js` with tests in `tests/unit/pitch.test.mjs`.
 

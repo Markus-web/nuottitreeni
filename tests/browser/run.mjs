@@ -3,6 +3,8 @@
 // Lighthouse budgets and the template (deploy-button) build. Exit 1 on any failure.
 //
 // Usage: node tests/browser/run.mjs [--only flows,aaa,seo,lighthouse,template] [--no-build]
+//        [--grep text]   (only flows and AAA pages whose name contains the text)
+// AAA paths ending in #note-colors run with the note colours setting on.
 // Needs: npm ci --prefix tests/browser --ignore-scripts, and Chromium (CHROMIUM_PATH, default
 // /usr/bin/chromium). Reports and screenshots: tests/browser/artifacts/.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -22,6 +24,7 @@ const { chromium } = require("playwright-core");
 const args = process.argv.slice(2);
 const onlyArg = args.find((a) => a.startsWith("--only"));
 const only = onlyArg ? (onlyArg.includes("=") ? onlyArg.split("=")[1] : args[args.indexOf(onlyArg) + 1]).split(",") : ["flows", "aaa", "seo", "lighthouse", "template"];
+const grep = args.includes("--grep") ? args[args.indexOf("--grep") + 1] : "";
 const artifacts = join(ROOT, "tests/browser/artifacts");
 rmSync(artifacts, { recursive: true, force: true });
 mkdirSync(join(artifacts, "shots"), { recursive: true });
@@ -61,6 +64,7 @@ try {
 	// ---- flows ------------------------------------------------------------------------
 	if (only.includes("flows")) {
 		for (const [name, fn] of Object.entries(flows(open))) {
+			if (!name.includes(grep)) continue;
 			try {
 				await fn({ base: server.base });
 				record("flow", name, []);
@@ -80,6 +84,7 @@ try {
 			"/harjoitus/?l=treble-c4-g4&m=single",
 			"/harjoitus/?l=keys&m=single",
 			"/harjoitus/?l=treble-c4-c5&m=name",
+			"/harjoitus/?l=treble-c4-c5&m=name#note-colors",
 			"/vapaa-harjoitus/",
 			"/vapaa-harjoitus/?c=grand&lo=F2&hi=G5&k=-2&a=1&m=name",
 			"/rytmiharjoitus/?l=rhythm-values",
@@ -87,6 +92,7 @@ try {
 			"/kappaleet/",
 			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/`,
 			`/kappaleet/${fi.slugs.pieces["chopin-preludi"]}/`,
+			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/#note-colors`,
 			"/paivakirja/",
 			"/laitteet/",
 			"/asetukset/",
@@ -105,9 +111,10 @@ try {
 			{ theme: "dark", width: 320, deep: false },
 			{ theme: "light", width: 320, deep: true },
 		];
-		for (const path of [...fiPaths, ...enPaths]) {
+		for (const path of [...fiPaths, ...enPaths].filter((p) => p.includes(grep))) {
 			for (const c of combos) {
-				const page = await open(path, { theme: c.theme, width: c.width, height: 800, locale: path.startsWith("/en/") ? "en-GB" : "fi-FI", mode: "prompt" });
+				const settings = path.endsWith("#note-colors") ? { noteColors: true, fallingNotes: true } : null;
+				const page = await open(path, { theme: c.theme, width: c.width, height: 800, locale: path.startsWith("/en/") ? "en-GB" : "fi-FI", mode: "prompt", settings });
 				if (path.includes("kappaleet/") && path.length > 12) await page.waitForSelector("#score svg", { timeout: 15000 }).catch(() => {});
 				const problems = [];
 				for (const v of await axe(page)) problems.push(`axe ${v}`);
@@ -160,11 +167,19 @@ try {
 			for (const formFactor of ["mobile", "desktop"]) {
 				for (const p of budgetPages) {
 					const config = formFactor === "desktop" ? (await import(require.resolve("lighthouse/core/config/desktop-config.js"))).default : undefined;
-					const r = await lighthouse(server.base + p, { port: chrome.port, output: "json", logLevel: "error", onlyCategories: ["performance", "accessibility", "best-practices", "seo"] }, config);
+					// A run that fails to load (score null, runtimeError such as NO_FCP on a busy CI
+					// machine) is repeated once; a real budget miss is not retried.
+					const run = () => lighthouse(server.base + p, { port: chrome.port, output: "json", logLevel: "error", onlyCategories: ["performance", "accessibility", "best-practices", "seo"] }, config);
+					let r = await run();
+					if (r.lhr.runtimeError || r.lhr.categories.performance.score == null) {
+						console.log(`retry lighthouse ${formFactor} ${p}: ${r.lhr.runtimeError?.code ?? "no performance score"}`);
+						r = await run();
+					}
 					const cat = r.lhr.categories;
 					const a = r.lhr.audits;
 					const scores = Object.fromEntries(Object.entries(cat).map(([k, v]) => [k, Math.round(v.score * 100)]));
 					const problems = [];
+					if (r.lhr.runtimeError) problems.push(`lighthouse runtime error ${r.lhr.runtimeError.code}: ${r.lhr.runtimeError.message}`);
 					// SEO on localhost: canonical points to the production host, so "canonical" and
 					// "is-crawlable" are judged by the SEO crawl above instead.
 					if (scores.performance < 95) problems.push(`performance ${scores.performance} < 95`);

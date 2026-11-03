@@ -45,7 +45,7 @@ npm run test:browser          # or: node tests/browser/run.mjs --only flows,aaa
 
 `npm run check` runs everything in the order CI does. [docs/testing.md](docs/testing.md) explains each part.
 
-`main` is protected: pull requests merge only when CI (the `check` job) passes, and force pushes are blocked. Dependency updates wait until a release is at least 14 days old.
+`main` is protected, for the maintainer too: every change arrives as a pull request and merges (squash) only when the required CI jobs pass (`check` and the Node 22 and 26 jobs) on a branch that is up to date with `main`, with all review conversations resolved. Force pushes and deleting `main` are blocked. See [decision 0011](docs/decisions/0011-stable-main.md). Dependency updates wait until a release is at least 14 days old.
 
 Keep pull requests small and about one thing. Describe what changed and why; screenshots help for visual changes. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`fix: ...`, `feat: ...`, `docs: ...`).
 

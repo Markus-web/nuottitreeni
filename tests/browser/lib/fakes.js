@@ -1,6 +1,6 @@
 // Fake MIDI, Bluetooth and USB devices, injected into pages before any app script runs
 // (page.addInitScript). Lets the browser tests drive every input path without hardware:
-//   window.__fakeMidi.press(note, vel?), .release(note), .cc(n, value)
+//   window.__fakeMidi.press(note, vel?), .release(note), .cc(n, value), .unplug()
 //   window.__fakeBle.packet([bytes])      after the page connected to "Fake BLE Piano"
 //   window.__fakeUsb.packet([bytes])      after the page connected to "Fake USB Piano"
 //   microphone: getUserMedia returns a sine tone at window.__fakeMicHz (default 440 Hz, A4)
@@ -18,7 +18,13 @@ export function fakeDevices(mode) {
 	};
 	const sent = [];
 	const output = { id: "fake-out", name: "Fake Piano", manufacturer: "Test", state: "connected", send: (bytes) => sent.push(Array.from(bytes)) };
-	const access = { inputs: new Map([["fake-in", input]]), outputs: new Map([["fake-out", output]]), addEventListener() {}, sysexEnabled: false };
+	const stateListeners = [];
+	const access = {
+		inputs: new Map([["fake-in", input]]),
+		outputs: new Map([["fake-out", output]]),
+		addEventListener: (type, fn) => type === "statechange" && stateListeners.push(fn),
+		sysexEnabled: false,
+	};
 	const emit = (bytes) => {
 		const ev = { data: new Uint8Array(bytes), timeStamp: performance.now() };
 		for (const fn of listeners) fn(ev);
@@ -27,6 +33,11 @@ export function fakeDevices(mode) {
 		press: (note, vel = 90) => emit([0x90, note, vel]),
 		release: (note) => emit([0x80, note, 0]),
 		cc: (n, value) => emit([0xb0, n, value]),
+		unplug: () => {
+			input.state = "disconnected";
+			output.state = "disconnected";
+			for (const fn of stateListeners) fn({ port: input });
+		},
 		sent,
 	};
 	if (mode === "unsupported") {

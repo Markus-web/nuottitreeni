@@ -9,7 +9,7 @@ import { Metronome } from "../core/sound.js";
 import { renderStaff } from "../core/staff.js";
 import { getDeviceId, getProgress, saveProgress } from "../core/store.js";
 import * as icons from "../content/icons.js";
-import { $, boot, el, focusHeading } from "./common.js";
+import { $, boot, el, focusHeading, howTo } from "./common.js";
 
 const QUESTIONS = 10;
 const ctx = await boot();
@@ -29,7 +29,8 @@ function start() {
 	const tx = dict.rhythm[lesson.id];
 	heading.textContent = tx.title;
 	document.title = `${tx.title}, ${t("site.name")}`;
-	root.append(el("p", {}, el("a", { className: "standalone", href: ctx.paths.rhythm[lesson.id], text: `${t("drill.backToGuide")}: ${tx.title}` })));
+	const kind = lesson.kind === "tap" ? "tap" : "quiz";
+	root.append(el("p", {}, el("a", { className: "standalone", href: ctx.paths.rhythm[lesson.id], text: `${t("drill.backToGuide")}: ${tx.title}` })), howTo(ctx, kind, dict.howto[kind]));
 	if (lesson.kind === "tap") tapMode(tx);
 	else quizMode(tx);
 }
@@ -116,10 +117,11 @@ function tapMode(tx) {
 	const startBtn = el("button", { type: "button", className: "btn btn-primary", icon: icons.play, text: t("rhythmUi.start") });
 	const tapBtn = el("button", { type: "button", className: "btn", text: t("rhythmUi.playing"), disabled: true });
 	const newBtn = el("button", { type: "button", className: "btn", icon: icons.shuffle, text: t("rhythmUi.newPattern") });
+	const stopBtn = el("button", { type: "button", className: "btn", icon: icons.stop, text: t("rhythmUi.stop"), hidden: true });
 	const results = el("div", { "aria-live": "polite" });
 	root.append(
-		el("div", { className: "field" }, el("label", { for: "tempo", text: t("rhythmUi.tempo") }), tempo, " ", tempoOut),
-		el("section", { className: "question", "aria-label": tx.question }, prompt, figure, beat, el("div", { className: "actions" }, startBtn, tapBtn, newBtn), results),
+		el("fieldset", {}, el("legend", { text: t("rhythmUi.metronome") }), el("div", { className: "field" }, el("label", { for: "tempo", text: t("rhythmUi.tempo") }), tempo, " ", tempoOut)),
+		el("section", { className: "question", "aria-label": tx.question }, prompt, figure, beat, el("div", { className: "actions" }, startBtn, tapBtn, stopBtn, newBtn), results),
 	);
 	let pattern = lesson.patterns[Math.floor(Math.random() * lesson.patterns.length)];
 	const draw = () => (figure.innerHTML = renderStaff({ staff: "treble", timeSig: [4, 4], items: toStaffItems(parseMelody(pattern), "treble"), label: tx.question }));
@@ -165,6 +167,7 @@ function tapMode(tx) {
 		startBtn.disabled = true;
 		newBtn.disabled = true;
 		tapBtn.disabled = false;
+		stopBtn.hidden = false;
 		tapBtn.focus();
 		results.replaceChildren();
 		let t0 = null;
@@ -180,15 +183,28 @@ function tapMode(tx) {
 				}
 			},
 		});
-		setTimeout(() => finish(spb), (8 * 60000) / bpm + 400);
+		finishTimer = setTimeout(() => finish(spb), (8 * 60000) / bpm + 400);
 	});
 
-	function finish(spb) {
+	let finishTimer = null;
+	function reset() {
 		running = false;
+		clearTimeout(finishTimer);
 		metronome.stop();
 		startBtn.disabled = false;
 		newBtn.disabled = false;
 		tapBtn.disabled = true;
+		stopBtn.hidden = true;
+	}
+	// Stop: end the run at once (no score is saved), for example to change the tempo.
+	stopBtn.addEventListener("click", () => {
+		reset();
+		beat.textContent = "";
+		startBtn.focus();
+	});
+
+	function finish(spb) {
+		reset();
 		const window = Math.max(80, spb * 0.12);
 		const used = new Set();
 		let ok = 0;

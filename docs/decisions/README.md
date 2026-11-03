@@ -14,3 +14,4 @@ Short records of choices that shape the code, with the reasons, so they are not 
 | [0008](0008-microphone-input.md) | Microphone input, analysed in the browser only |
 | [0009](0009-piece-practice-aids.md) | Piece practice aids: names, fingering, falling notes |
 | [0010](0010-hosting-without-cloudflare.md) | Hosting without Cloudflare |
+| [0011](0011-stable-main.md) | Every change reaches `main` through a pull request that passed CI |

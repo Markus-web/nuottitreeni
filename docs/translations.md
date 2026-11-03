@@ -5,8 +5,8 @@ The app ships in Finnish and English. Each language is one file, `src/content/lo
 ## Adding a language
 
 1. Copy `src/content/locales/en.js` to `src/content/locales/<code>.js` (ISO 639-1 code, for example `sv` or `de`).
-2. Translate every string. Keep the keys and the placeholders in braces (`{name}`, `{n}`) as they are.
-3. Set `meta`: `locale`, `tag` (a BCP 47 tag used for number and date formats, for example `sv-SE`), `name` (the language's own name), `ogLocale` (for example `sv_SE`), `noteNames` (`letters` for C D E F G A B, or `h-system` for the German and Nordic system with H and -is/-es) and `switchLabel` (the link text in the header, written in the new language, for example `På svenska`).
+2. Translate every string. Keep the keys and the placeholders in braces (`{name}`, `{n}`) as they are. The "How to practise" steps (`howto`) name buttons, so use the same words as your translation of those buttons.
+3. Set `meta`: `locale`, `tag` (a BCP 47 tag used for number and date formats, for example `sv-SE`), `name` (the language's own name), `ogLocale` (for example `sv_SE`), `noteNames` (`letters` for C D E F G A B, or `h-system` for H with the -is/-es names used in Finnish and German: Fis, Es, As, B; Swedish spells them -iss/-ess, which needs a new system in `src/core/notes.js` with tests) and `switchLabel` (the link text in the header, written in the new language, for example `På svenska`).
 4. Translate the slugs (`slugs.pages`, `slugs.lessons`, `slugs.rhythm`, `slugs.pieces`): lowercase ASCII with hyphens. Slugs are part of public URLs; do not change them after release.
 5. Add the privacy notice and accessibility statement to `src/content/legal.js` under the new code. Until then the English text is used.
 6. Build with the language: `NT_LOCALES=en,fi,<code> npm run build`. The language is served under `/<code>/`.

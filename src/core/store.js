@@ -72,6 +72,10 @@ export const DEFAULT_SETTINGS = {
 	scoreFingers: false,
 	fallingNotes: false,
 	nextNotes: true,
+	// Note colours (C red ... B violet) on keys, falling notes and name buttons; off by default.
+	noteColors: false,
+	// "How to practise" boxes already seen (open on the first visit, closed after): mode keys.
+	seenHelp: [],
 	// Microphone input was on: restart it on the next page if permission is still granted.
 	micOn: false,
 	// Free practice: last configuration (normalized by freeConfig in content/catalog.js).
@@ -109,7 +113,9 @@ export function saveProgress(doc) {
 }
 
 /** Per-MIDI-device settings, keyed by "name|manufacturer". */
-export const DEFAULT_DEVICE = { channel: 0, octave: 0, transpose: 0, curve: "linear", minVelocity: 1, split: 60 };
+// keys: keyboard size (KEYBOARD_SIZES in keyboard-layout.js); null = not set (a known model's
+// size is used), 0 = unknown on purpose (no range warning).
+export const DEFAULT_DEVICE = { channel: 0, octave: 0, transpose: 0, curve: "linear", minVelocity: 1, split: 60, keys: null };
 
 export function getDeviceSettings(key) {
 	return { ...DEFAULT_DEVICE, ...(getJson("devices", {})[key] ?? {}) };
