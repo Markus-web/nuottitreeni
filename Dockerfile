@@ -3,7 +3,7 @@
 #   docker build -t nuottitreeni --build-arg NT_DEFAULT_LOCALE=fi --build-arg NT_LOCALES=fi,en .
 #   docker run --rm -p 127.0.0.1:8080:8080 nuottitreeni     ->  http://localhost:8080/
 # Behind an HTTPS reverse proxy, forward X-Forwarded-Proto: https. See docs/self-hosting.md.
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
@@ -16,7 +16,7 @@ ARG NT_OPERATOR_NAME=""
 ARG NT_OPERATOR_CONTACT=""
 RUN node scripts/build.mjs
 
-FROM node:24-alpine
+FROM node:25-alpine
 WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/scripts/serve.mjs ./scripts/serve.mjs
