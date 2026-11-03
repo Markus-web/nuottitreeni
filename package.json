@@ -17,7 +17,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "npm run build && wrangler d1 migrations apply DB --local && wrangler dev --port 8797",
-    "test": "node --test tests/unit tests/worker",
+    "test": "node --test \"tests/unit/*.test.mjs\" \"tests/worker/*.test.mjs\"",
     "test:browser": "node tests/browser/run.mjs",
     "check": "npm test && npm run build && wrangler deploy --dry-run --outdir .wrangler/dry-run && npm run test:browser",
     "db:migrate": "wrangler d1 migrations apply DB --remote",

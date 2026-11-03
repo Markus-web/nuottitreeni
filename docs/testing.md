@@ -4,7 +4,7 @@ Three layers, from fast to thorough. CI (`.github/workflows/ci.yml`) runs all of
 
 ## 1. Unit and Worker tests: `npm test`
 
-`node --test tests/unit tests/worker`, no dependencies beyond Node 22. About two seconds plus two builds.
+`node --test "tests/unit/*.test.mjs" "tests/worker/*.test.mjs"` (quoted globs, expanded by Node 22 and later), no dependencies beyond Node 22. About two seconds plus two builds.
 
 | File | Covers |
 |---|---|
