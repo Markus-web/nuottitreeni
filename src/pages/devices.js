@@ -1,16 +1,18 @@
-// Devices: connect MIDI (Web MIDI, Bluetooth, USB vendor mode), choose inputs and output,
+// Devices: connect MIDI (Web MIDI, Bluetooth, USB vendor mode) or the microphone, choose inputs and output,
 // per-device settings, Local Control and All Notes Off, a live MIDI monitor, latency, and a
 // copyable device report for GitHub (device names and message types only).
 import { getDeviceSettings, getSettings, saveDeviceSettings, saveSettings } from "../core/store.js";
 import { midiLabel } from "../core/notes.js";
 import * as icons from "../content/icons.js";
-import { $, boot, el } from "./common.js";
+import { $, boot, el, toggleMic } from "./common.js";
 
 const ctx = await boot();
 const { t, hub, noteNames } = ctx;
 const root = $("#app-root");
 
 const midiBox = el("section", { "aria-labelledby": "midi-h" });
+const micBox = el("section", { "aria-labelledby": "mic-h" });
+const micStatus = el("p", { role: "status" });
 const bleBox = el("section", { "aria-labelledby": "ble-h" });
 const usbBox = el("section", { "aria-labelledby": "usb-h" });
 const settingsBox = el("section", { "aria-labelledby": "dev-settings-h" });
@@ -24,6 +26,7 @@ const seen = new Map();
 
 root.append(
 	midiBox,
+	micBox,
 	settingsBox,
 	bleBox,
 	usbBox,
@@ -50,7 +53,7 @@ function select(id, options, value, onChange) {
 }
 
 function renderMidi() {
-	const inputs = hub.inputs();
+	const inputs = hub.inputs().filter((i) => i.kind !== "mic");
 	const settings = getSettings();
 	const parts = [el("h2", { id: "midi-h", text: t("devicesPage.midiHeading") }), el("p", { text: t("devicesPage.midiIntro") })];
 	if (!hub.web.supported) parts.push(el("p", { className: "notice", text: t("device.unsupported") }));
@@ -96,7 +99,7 @@ function renderMidi() {
 }
 
 function renderDeviceSettings() {
-	const inputs = hub.inputs();
+	const inputs = hub.inputs().filter((i) => i.kind !== "mic");
 	const parts = [el("h2", { id: "dev-settings-h", text: t("devicesPage.settingsHeading") })];
 	if (!inputs.length) parts.push(el("p", { text: t("device.statusNone") }));
 	inputs.forEach((i, idx) => {
@@ -161,8 +164,25 @@ function renderReport() {
 	].join("\n");
 }
 
+function renderMic() {
+	const parts = [el("h2", { id: "mic-h", text: t("devicesPage.micHeading") }), el("p", { text: t("devicesPage.micIntro") }), el("p", { text: t("devicesPage.micLimits") })];
+	if (!hub.mic.supported) parts.push(el("p", { className: "notice", text: t("devicesPage.micUnsupported") }));
+	else {
+		const b = el("button", { type: "button", className: "btn", icon: icons.microphone, text: hub.mic.active ? t("devicesPage.micStop") : t("devicesPage.micStart"), "aria-pressed": String(hub.mic.active) });
+		b.addEventListener("click", () =>
+			toggleMic(ctx)
+				.then(() => (micStatus.textContent = hub.mic.active ? t("devicesPage.micListening") : ""))
+				.catch((e) => (micStatus.textContent = e?.code === "unsupported" ? t("devicesPage.micUnsupported") : t("devicesPage.micDenied")))
+				.finally(renderAll),
+		);
+		parts.push(el("div", { className: "actions" }, b), micStatus);
+	}
+	micBox.replaceChildren(...parts);
+}
+
 function renderAll() {
 	renderMidi();
+	renderMic();
 	renderDeviceSettings();
 	renderExperimental(bleBox, "ble-h", t("devicesPage.bleHeading"), t("devicesPage.bleIntro"), t("devicesPage.bleConnect"), hub.ble.supported, () => hub.connectBle());
 	renderExperimental(usbBox, "usb-h", t("devicesPage.usbHeading"), t("devicesPage.usbIntro"), t("devicesPage.usbConnect"), hub.usb.supported, () => hub.connectUsb());
@@ -170,6 +190,9 @@ function renderAll() {
 }
 
 hub.addEventListener("status", renderAll);
+hub.addEventListener("note", (e) => {
+	if (e.detail.source === "mic" && e.detail.on) micStatus.textContent = t("devicesPage.micHeard", { name: midiLabel(e.detail.midi, noteNames) });
+});
 hub.addEventListener("message", (e) => {
 	const { device, text } = e.detail;
 	const type = text.slice(0, 1);

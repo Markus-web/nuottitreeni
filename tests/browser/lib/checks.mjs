@@ -197,7 +197,7 @@ export async function animations(page) {
 	return n ? [`${n} running animations`] : [];
 }
 
-/** Visual tells of template design (catalogue: https://impeccable.style/slop/) that apply to this app; CONTRIBUTING.md, Accessibility. */
+/** Visual tells of template design (catalogue: https://impeccable.style/slop/) that apply to this app, and broken text such as "null"; CONTRIBUTING.md, Accessibility. */
 export async function designSlop(page) {
 	return page.evaluate(() => {
 		const out = [];
@@ -218,6 +218,13 @@ export async function designSlop(page) {
 			if (bl >= 3 && bl > parseFloat(cs.borderTopWidth) + 1 && bl > parseFloat(cs.borderRightWidth) + 1) out.push(`side stripe ${el.tagName.toLowerCase()}.${el.className}`);
 			if (cs.animationIterationCount === "infinite" && cs.animationName !== "none") out.push("infinite animation");
 			if (/^H[1-3]$/.test(el.tagName) && parseFloat(cs.fontSize) < bodySize) out.push(`heading smaller than body: ${el.tagName}`);
+		}
+		// Broken output: "null"/"undefined"/"NaN" as visible text, or a {placeholder} left in a string.
+		const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+		for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+			const text = node.textContent.trim();
+			if (!text || !node.parentElement?.getClientRects().length || node.parentElement.closest("script, style, textarea")) continue;
+			if (/^(null|undefined|NaN)$/.test(text) || /\b(null|undefined|NaN)\b/.test(text.slice(0, 40)) || /\{[a-zA-Z]+\}/.test(text)) out.push(`broken text: "${text.slice(0, 40)}"`);
 		}
 		return [...new Set(out)];
 	});

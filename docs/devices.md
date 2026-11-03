@@ -1,12 +1,13 @@
 # Keyboards and other input devices
 
-Nuottitreeni reads notes from five kinds of input. They all feed the same event stream (`src/core/input/hub.js`), so every exercise works with any of them.
+Nuottitreeni reads notes from six kinds of input. They all feed the same event stream (`src/core/input/hub.js`), so every exercise works with any of them.
 
 | Input | Covers | Browsers | Status |
 |---|---|---|---|
 | **Web MIDI** | USB class-compliant MIDI keyboards, Bluetooth MIDI keyboards paired in the operating system, MIDI interfaces (DIN cables through a USB adapter), virtual and network MIDI ports | Chrome, Edge, Opera, Brave on desktop and Android; Firefox on desktop (version 108 and later, after a site permission add-on) | Main path |
 | **Bluetooth LE MIDI** (Web Bluetooth) | BLE MIDI keyboards connected straight from the browser, without pairing in the operating system | Chromium on desktop and Android | Experimental |
 | **USB vendor mode** (WebUSB) | Keyboards that use the maker's own USB class but send standard 4-byte USB-MIDI packets (older Yamaha, some Roland, Korg, Casio and Kawai models) when no driver has claimed the device | Chromium on macOS, Android and ChromeOS; on Windows only with the WinUSB driver | Experimental |
+| **Microphone** | An acoustic piano or a voice, one note at a time (no chords). Pitch is found in the browser (YIN on the latest 2048 samples every 40 ms) and never recorded or sent | Every browser with a microphone, including Safari on iPhone and iPad | Experimental; the only way to play a real instrument on iOS |
 | **Computer keyboard** | Two rows of letter keys as a piano octave (A = C, W = C sharp, ...), Z and X change octave | All | Built in; active only while the on-screen piano has focus |
 | **On-screen piano** | Mouse, touch, pen, and the keyboard (arrows and Enter) | All, including Safari and iOS | Built in |
 
@@ -41,6 +42,12 @@ Saved per device name and maker in the browser (`nt.v1.devices`):
 - **"Access denied" or "already in use" with the USB connection.** The operating system's MIDI driver already holds the keyboard (always on Linux, and on Windows with the maker's driver). That is good news: use **Connect MIDI device** (Web MIDI) instead. The experimental USB connection is only for systems where no driver takes the keyboard.
 - **Firefox.** It asks you to add a site permission add-on the first time. That is how Firefox grants MIDI access.
 - **Older Yamaha keyboards such as the DGX-205.** They use Yamaha's own USB class. On Linux they appear as normal MIDI devices. On Windows install Yamaha's USB-MIDI driver. On macOS and Android try the experimental USB connection on the Devices page in Chrome or Edge. Their USB port carries MIDI only, no audio.
+
+## Microphone
+
+Turn it on with **Mikrofoni** in the header or on the Devices page; the browser asks for permission once, and the choice is remembered from page to page. Echo cancellation, noise suppression and automatic gain are turned off because they bend the pitch. Notes heard through the microphone are never played back by the app's piano sound (the microphone would hear them again).
+
+Tips: one note at a time, a quiet room, the device near the instrument. A note must hold for about 80 ms before it counts; striking the same key again is recognised when the sound gets clearly louder. Chords and very low notes (below about B1) are not recognised. The detector is in `src/core/pitch.js` with tests in `tests/unit/pitch.test.mjs`.
 
 ## Device reports
 

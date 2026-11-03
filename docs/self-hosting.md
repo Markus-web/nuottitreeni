@@ -34,6 +34,35 @@ To keep the sync data stored inside the EU, create the database with `npx wrangl
 
 For a long-lived setup, keep your own `wrangler.jsonc` (Worker name, database id, routes, `vars`) next to the clone and deploy with `npx wrangler deploy --config path/to/your/wrangler.jsonc`, so updates from upstream never touch it. Paths in that file (`main`, `assets.directory`, `migrations_dir`) are relative to the file itself.
 
+## Other hosts (without sync codes)
+
+The site itself is plain static files in `dist/`; only the optional sync codes need the Worker and D1. Any static host can serve the rest: lessons, pieces, MIDI keyboards, the microphone, recordings, export and import, offline use. When there is no sync API, the Settings page says that sync is not available on this site.
+
+Build first, with the build variables you want ([configuration.md](configuration.md)):
+
+```bash
+npm ci && npm run build      # the site is now in dist/
+```
+
+| Host | How | Notes |
+|---|---|---|
+| Netlify | Publish directory `dist`, build command `npm run build` | Reads the generated `dist/_headers` (same format as Cloudflare) and serves `404.html` |
+| Cloudflare Pages | `npx wrangler pages deploy dist` | Reads `_headers`; no Worker, so no sync |
+| GitHub Pages | Publish the contents of `dist/` | Only at the root of a domain (a custom domain or a `username.github.io` repository): the pages use root paths such as `/assets/`. GitHub Pages cannot send the security headers |
+| Your own web server (nginx, Caddy, Apache) | Serve `dist/` as the document root; folders have `index.html`, unknown paths should get `404.html` | Copy the headers from `dist/_headers` into the server configuration |
+
+## On your own computer or server
+
+| Way | Command | Sync |
+|---|---|---|
+| Development server (Wrangler, local D1) | `npm run dev`, then <http://127.0.0.1:8797/> | Yes, stored locally |
+| Small built-in server (Node only, no other dependencies) | `npm run build && npm run serve`, then <http://localhost:8080/> | No |
+| Docker | `docker build -t nuottitreeni . && docker run --rm -p 127.0.0.1:8080:8080 nuottitreeni` | No |
+
+`npm run serve` (`scripts/serve.mjs`) applies the same security and cache headers as Cloudflare. Options: `--port`, `--host` (use `0.0.0.0` to listen on the network), `--dir`; `OPERATOR_NAME` and `OPERATOR_CONTACT` work as on Cloudflare. The Docker image takes the build variables as build arguments, for example `--build-arg NT_LOCALES=fi,en --build-arg NT_OPERATOR_NAME="Music school"`.
+
+**HTTPS on a home network.** Browsers allow MIDI keyboards, the microphone and offline use only in a secure context: `http://localhost` on the same computer is fine, but `http://192.168.x.x` from a tablet is not. Put an HTTPS reverse proxy in front of the server (for example Caddy, or Tailscale Serve for devices on your tailnet); the proxy should send `X-Forwarded-Proto: https`, so the server also sends the HTTPS-only headers.
+
 ## Updating
 
 The button creates a copy, not a fork, so pull changes from upstream yourself:
@@ -56,6 +85,10 @@ npx wrangler d1 export nuottitreeni --remote --output nuottitreeni-backup.sql
 ```
 
 D1 also keeps point-in-time history (Time Travel) for restoring the database to an earlier minute; see Cloudflare's D1 documentation for the retention on your plan.
+
+## Cloudflare zone features
+
+If your domain's zone has Web Analytics (automatic setup), Zaraz or Rocket Loader turned on, Cloudflare would inject their scripts into the pages. The pages carry `Cache-Control: no-transform`, which Cloudflare honours, so nothing is injected and the privacy notice stays true; the zone then does not compress the HTML (assets are still compressed). Zone-wide security headers (managed transforms) may also replace `Referrer-Policy`, `X-Frame-Options` or HSTS with their own values; `prove:live` accepts values that are at least as strict and lists them as notes.
 
 ## Turning sync off
 

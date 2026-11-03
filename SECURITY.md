@@ -31,5 +31,6 @@ Out of scope:
 - Sync codes are 80 random bits, stored only as SHA-256 hashes; the server accepts only data shaped like practice statistics, at most 64 KiB.
 - Requests from other origins are rejected; rate limits use a salted daily hash of the IP address, kept for two days.
 - Workers observability (request logs) is off by default.
+- Microphone audio is analysed in the browser only and never stored or sent; the Permissions-Policy allows the microphone for the site itself and nothing else.
 
 More: [PRIVACY.md](PRIVACY.md) and [docs/privacy-design.md](docs/privacy-design.md).

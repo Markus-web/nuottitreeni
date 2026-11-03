@@ -102,6 +102,11 @@ export class Sound {
 		else this.release(midi);
 	}
 
+	/** True while the app's own piano sound plays (and 200 ms after), so the microphone can pause. */
+	isSounding() {
+		return this.voices.size > 0 || performance.now() < (this.quietAt ?? 0);
+	}
+
 	release(midi, seconds = 0.3) {
 		const v = this.voices.get(midi);
 		if (!v || !this.ctx) return;
@@ -111,6 +116,7 @@ export class Sound {
 		v.g.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
 		v.src.stop(now + seconds + 0.02);
 		this.voices.delete(midi);
+		this.quietAt = Math.max(this.quietAt ?? 0, performance.now() + seconds * 1000 + 200);
 	}
 
 	setPedal(down) {

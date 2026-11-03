@@ -18,7 +18,7 @@ By contributing you agree that your contribution is published under the [MIT lic
 
 ## Set up
 
-You need Node 22 and npm.
+You need Node 24 and npm (Node 22 and 26 work too).
 
 ```bash
 git clone https://github.com/Markus-web/nuottitreeni.git

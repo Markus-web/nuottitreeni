@@ -25,7 +25,8 @@ Nuottitreeni is a browser app for learning to read sheet music with a MIDI keybo
 | `src/sw.js` | Service worker template (the build fills in the file lists) |
 | `worker/` | API Worker, security headers (single source for `_headers` too), rate limits |
 | `migrations/` | D1 schema |
-| `scripts/` | Build, asset generation (fonts, samples, icons, photos, OG images), SEO check, live proof |
+| `scripts/` | Build, asset generation (fonts, samples, icons, photos, OG images), SEO check, live proof, `serve.mjs` (hosting without Cloudflare) |
+| `Dockerfile` | Builds the site and runs `scripts/serve.mjs` (sync off) |
 | `tests/unit`, `tests/worker` | `node --test`, no dependencies; the Worker runs against a `node:sqlite` D1 shim |
 | `tests/browser/` | Playwright flows, AAA matrix, SEO crawl, Lighthouse, review screenshots; own pinned `package.json` |
 | `docs/` | Architecture, API, self-hosting, configuration, devices, privacy design, how-tos, decisions |
@@ -36,7 +37,8 @@ Nuottitreeni is a browser app for learning to read sheet music with a MIDI keybo
 npm ci
 npm test                                       # unit + Worker tests; run after every change
 npm run build                                  # dist/, fails on size budgets
-npm run dev                                    # local site on http://127.0.0.1:8797
+npm run dev                                    # local site on http://127.0.0.1:8797 (with sync, local D1)
+npm run serve                                  # built site on http://localhost:8080 without Cloudflare (sync off)
 npm ci --prefix tests/browser --ignore-scripts
 node tests/browser/run.mjs --only flows,aaa    # browser flows and the AAA matrix (needs Chromium)
 node tests/browser/shots.mjs                   # screenshots in tests/browser/artifacts/review/
@@ -49,12 +51,12 @@ All **stable**: a breaking change needs a major version, a migration and a CHANG
 
 - Ids in `src/content/catalog.js` (lessons, rhythm lessons, pieces, modes) are stored in users' progress and on sync servers. Never rename or remove one; add a new id (`tests/unit/content.test.mjs` guards them).
 - Storage keys `nt.v1.*` and the IndexedDB `nuottitreeni` stores (`src/core/store.js`, listed in [docs/privacy-design.md](docs/privacy-design.md)).
-- Progress format v1 and its limits (`src/core/progress.js`), validated by both the browser and the Worker.
+- Progress format v1 and its limits (`src/core/progress.js`), validated by both the browser and the Worker. The lesson id `free` (free practice) and the mode `name` were added in 1.1.0.
 - The sync API and error codes in [docs/api.md](docs/api.md), and the sync code format (`src/core/sync-code.js`).
 - URL slugs in the locale files (`slugs`): public links and search results.
 - Build variables and runtime variables in [docs/configuration.md](docs/configuration.md); self-hosters rely on their names.
 
-The Bluetooth LE MIDI and USB vendor-mode adapters are **experimental** and may change without migration.
+The Bluetooth LE MIDI, USB vendor-mode and microphone inputs are **experimental** and may change without migration.
 
 ## Do not
 
@@ -70,7 +72,7 @@ The Bluetooth LE MIDI and USB vendor-mode adapters are **experimental** and may 
 
 - Browser APIs: Web MIDI, Web Bluetooth, WebUSB, Web Audio, IndexedDB, service workers.
 - Cloudflare Workers with static assets, D1 and a cron trigger; Wrangler 4 for development and deploys.
-- Build: Node 22, esbuild. Tests: Node's test runner; Playwright, axe-core and Lighthouse in `tests/browser/`.
+- Build: Node 24 (`.node-version`; 22 and 26 are tested in CI), esbuild. New dependency releases wait 14 days unless they fix a security advisory ([docs/release.md](docs/release.md#dependency-updates)). Tests: Node's test runner; Playwright, axe-core and Lighthouse in `tests/browser/`.
 - Vendored third-party parts with their own licences: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Dependents

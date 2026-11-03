@@ -17,6 +17,7 @@ Nuottitreeni is built so that it does not need to know who you are. This page su
 | Random device id | Your browser (`nt.v1.device`) | Keeping devices apart when syncing | Until you delete it | You, and the server if you sync |
 | Your sync code, if you use one | Your browser (`nt.v1.sync`) | Syncing without typing the code again | Until you unlink this browser | You |
 | MIDI recordings, imported sheet music | Your browser (IndexedDB `nuottitreeni`) | Practice log, your own pieces | Until you delete them | You |
+| Microphone sound, if you turn the microphone on | Only in memory while it is on: the pitch is worked out in the browser | Recognising the note you play | Not stored at all | Nobody; it is never recorded or sent |
 | Practice statistics and device ids, if you create a sync code | The instance's D1 database, keyed by a SHA-256 hash of the code | Copying progress between your devices | Deleted 12 months after last use, or when you delete it | Anyone who knows the code; the instance operator |
 | Salted, daily-changing hash of your IP address | The instance's D1 database | Rate limits against abuse | At most 2 days | The instance operator |
 

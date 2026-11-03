@@ -55,6 +55,10 @@ themeSelect.addEventListener("change", () => {
 	const footer = $("#theme-select");
 	if (footer) footer.value = themeSelect.value;
 });
+const namesSelect = el("select", { id: "settings-note-names", "aria-describedby": "note-names-hint" });
+for (const v of ["auto", "letters", "h-system", "solfege"]) namesSelect.append(el("option", { value: v, text: t(`settings.noteNamesOptions.${v}`) }));
+namesSelect.value = getSettings().noteNames;
+namesSelect.addEventListener("change", () => saveSettings({ noteNames: namesSelect.value }));
 const langLinks = [...document.querySelectorAll("[data-lang-link]")].map((a) => el("li", {}, el("a", { className: "standalone", href: a.getAttribute("href"), lang: a.getAttribute("lang"), hreflang: a.getAttribute("hreflang"), text: a.textContent })));
 
 root.append(
@@ -72,6 +76,8 @@ root.append(
 		check(t("keyboard.showNames"), "namesOnKeys"),
 		check(t("keyboard.showAll"), "showAllKeys"),
 		el("div", { className: "field" }, el("label", { for: "settings-theme", text: t("theme.label") }), themeSelect),
+		el("div", { className: "field" }, el("label", { for: "settings-note-names", text: t("settings.noteNames") }), namesSelect),
+		el("p", { className: "hint", id: "note-names-hint", text: t("settings.noteNamesHint") }),
 	),
 	section("lang-h", t("settings.languageHeading"), el("ul", {}, ...langLinks)),
 );
@@ -160,11 +166,18 @@ sync.addEventListener("status", (e) => {
 });
 
 async function syncEnabled() {
+	let res;
 	try {
-		const res = await fetch("/api/config", { cache: "no-store" });
-		return (await res.json()).syncEnabled !== false;
+		res = await fetch("/api/config", { cache: "no-store" });
 	} catch {
 		return true; // offline: show the controls; requests will report the offline state
+	}
+	// A host without the sync API (static hosting, scripts/serve.mjs) answers 404 or HTML.
+	if (!res.ok) return false;
+	try {
+		return (await res.json()).syncEnabled !== false;
+	} catch {
+		return false;
 	}
 }
 

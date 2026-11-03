@@ -121,7 +121,7 @@ function noteXml(it, voice, staff) {
 
 /**
  * MusicXML 4.0 (partwise) for a piano piece.
- * piece = { title, composer, fifths, time: [beats, beatType], right: "melody", left?: "melody" }
+ * piece = { title, composer, fifths, time: [beats, beatType], right: "melody", left?: "melody", pickup? }
  */
 export function toMusicXml(piece) {
 	const right = bars(parseMelody(piece.right));
@@ -141,7 +141,9 @@ export function toMusicXml(piece) {
 			body += `<backup><duration>${rightDur}</duration></backup>${left[i].map((it) => noteXml(it, 5, 2)).join("")}`;
 		}
 		const barline = i === right.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : "";
-		measures.push(`<measure number="${i + 1}">${attrs}${body}${barline}</measure>`);
+		// An upbeat (pickup) is measure 0 and "implicit": it does not count as a full bar.
+		const number = piece.pickup ? i : i + 1;
+		measures.push(`<measure number="${number}"${piece.pickup && i === 0 ? ' implicit="yes"' : ""}>${attrs}${body}${barline}</measure>`);
 	}
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">

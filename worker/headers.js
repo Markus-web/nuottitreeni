@@ -1,7 +1,8 @@
 // Security headers: the single source for both the Worker responses (/api/*) and the static
 // files (the build writes them into dist/_headers). Strict by default: same-origin only, no
-// third-party anything. MIDI and USB are allowed for this origin because they are input
-// devices; camera, microphone and the rest stay off. Bluetooth is not listed: Chromium has no
+// third-party anything. MIDI, USB and the microphone are allowed for this origin because they
+// are input devices (the microphone is analysed in the browser only, never sent); camera and
+// the rest stay off. Bluetooth is not listed: Chromium has no
 // Permissions-Policy feature for it (it warns on the name), and Web Bluetooth already needs a
 // user gesture and a device chooser on the top-level page.
 
@@ -25,8 +26,8 @@ export const CSP = [
 export const PERMISSIONS_POLICY = [
 	"midi=(self)",
 	"usb=(self)",
+	"microphone=(self)",
 	"camera=()",
-	"microphone=()",
 	"geolocation=()",
 	"payment=()",
 	"serial=()",
@@ -44,12 +45,22 @@ export const SECURITY_HEADERS = {
 	"X-Frame-Options": "DENY",
 };
 
+/**
+ * Cache-Control for pages. no-transform stops Cloudflare zone features (Web Analytics, Zaraz,
+ * Rocket Loader) from injecting scripts into the HTML, which would break the "no third-party
+ * scripts" promise; the price is that the zone does not compress pages (about 20 KB more on a
+ * first visit; the service worker caches pages afterwards). Assets keep zone compression.
+ */
+export const PAGE_CACHE = "public, max-age=0, must-revalidate, no-transform";
+export const ASSET_CACHE = "public, max-age=31536000, immutable";
+
 /** dist/_headers content for Workers static assets. */
 export function headersFile() {
 	const lines = ["/*"];
 	for (const [k, v] of Object.entries(SECURITY_HEADERS)) lines.push(`  ${k}: ${v}`);
-	lines.push("", "/assets/*", "  Cache-Control: public, max-age=31536000, immutable");
-	lines.push("", "/sw.js", "  Cache-Control: no-cache");
-	lines.push("", "/*.html", "  Cache-Control: public, max-age=0, must-revalidate");
+	lines.push(`  Cache-Control: ${PAGE_CACHE}`);
+	// "! Name" removes the header from the /* rule before setting the path's own value.
+	lines.push("", "/assets/*", "  ! Cache-Control", `  Cache-Control: ${ASSET_CACHE}`);
+	lines.push("", "/sw.js", "  ! Cache-Control", "  Cache-Control: no-cache");
 	return `${lines.join("\n")}\n`;
 }

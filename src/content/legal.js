@@ -39,6 +39,7 @@ export default {
 					],
 					after: [
 						"Jos luot synkronointikoodin, palvelimelle tallentuu harjoitustilastot, satunnaiset laitetunnukset ja tallennusajat. Koodia ei tallenneta sellaisenaan, vaan siitä laskettu tiiviste (SHA-256).",
+						"Jos otat mikrofonin käyttöön, selaimesi tunnistaa siitä soitetun nuotin korkeuden. Ääntä ei tallenneta eikä lähetetä minnekään, ja mikrofoni on käytössä vain, kun olet itse käynnistänyt sen.",
 						"Palvelin käsittelee pyyntöjen yhteydessä IP-osoitteesi. Väärinkäytösten estämiseksi IP-osoitteesta lasketaan suolattu, päivittäin vaihtuva tiiviste, jota säilytetään enintään kaksi vuorokautta. Itse IP-osoitetta ei tallenneta.",
 					],
 				},
@@ -170,6 +171,7 @@ export default {
 					],
 					after: [
 						"If you create a sync code, the server stores the practice statistics, random device ids and the times of saving. The code itself is not stored, only a hash (SHA-256) of it.",
+						"If you turn on the microphone, your browser recognises the pitch of the note you play. The sound is never recorded or sent anywhere, and the microphone is on only after you start it yourself.",
 						"The server handles your IP address when you make a request. To prevent abuse, a salted hash of the IP address that changes daily is kept for at most two days. The IP address itself is not stored.",
 					],
 				},

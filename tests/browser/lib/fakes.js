@@ -3,6 +3,7 @@
 //   window.__fakeMidi.press(note, vel?), .release(note), .cc(n, value)
 //   window.__fakeBle.packet([bytes])      after the page connected to "Fake BLE Piano"
 //   window.__fakeUsb.packet([bytes])      after the page connected to "Fake USB Piano"
+//   microphone: getUserMedia returns a sine tone at window.__fakeMicHz (default 440 Hz, A4)
 // mode: "granted" (permission already given, auto-connects), "prompt", "denied", "unsupported"
 
 export function fakeDevices(mode) {
@@ -108,4 +109,17 @@ export function fakeDevices(mode) {
 			} else queue.push(bytes);
 		},
 	};
+	// A "microphone" that hears a steady tone, made with Web Audio inside the page.
+	if (navigator.mediaDevices) {
+		navigator.mediaDevices.getUserMedia = async () => {
+			const ac = new AudioContext();
+			const osc = ac.createOscillator();
+			osc.frequency.value = window.__fakeMicHz ?? 440;
+			const dest = ac.createMediaStreamDestination();
+			osc.connect(dest);
+			osc.start();
+			await ac.resume().catch(() => {});
+			return dest.stream;
+		};
+	}
 }

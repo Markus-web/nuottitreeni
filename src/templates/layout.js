@@ -1,6 +1,6 @@
 // Page shell used by the build for every HTML page: head (SEO, social, preloads, config),
 // header with navigation and device status, footer. Output is a complete HTML string.
-import { bookOpen, code, gear, githubLogo, house, musicNotes, notebook, pianoKeys, plugs, question, translate } from "../content/icons.js";
+import { bookOpen, code, gear, githubLogo, house, microphone, musicNotes, notebook, pianoKeys, plugs, question, translate } from "../content/icons.js";
 import { svgIcon } from "../core/icon.js";
 import { escapeXml as esc } from "../core/staff.js";
 
@@ -16,7 +16,7 @@ const NAV = [
 	["glossary", "nav.glossary", bookOpen],
 	["help", "nav.help", question],
 ];
-const NAV_SECTION = { lesson: "home", rhythm: "home", practice: "home", rhythmPractice: "home", piece: "pieces", myPiece: "pieces" };
+const NAV_SECTION = { lesson: "home", rhythm: "home", practice: "home", freePractice: "home", rhythmPractice: "home", piece: "pieces", myPiece: "pieces" };
 
 function jsonScript(type, data, id) {
 	// "<" escaped so the JSON can never close the script element.
@@ -134,6 +134,7 @@ ${langLinks}
 </div>
 <div class="wrap device-row">
 <p class="device-status" id="device-status" role="status" data-state="off">${esc(t("device.statusNone"))}</p>
+<button type="button" class="btn" id="mic-toggle" aria-pressed="false">${svgIcon(microphone)}${esc(t("device.mic"))}</button>
 <button type="button" class="btn" id="device-connect" hidden>${svgIcon(plugs)}${esc(t("device.connect"))}</button>
 </div></header>`;
 

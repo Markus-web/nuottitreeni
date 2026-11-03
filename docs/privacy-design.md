@@ -6,9 +6,10 @@ The user-facing summary is [PRIVACY.md](../PRIVACY.md); the legal notice shown i
 
 1. **Local first.** Nothing leaves the browser unless the user creates or enters a sync code.
 2. **Minimum on the server.** The sync server stores practice statistics, random device ids and timestamps. No names, contact details, free text, files or recordings, and no fields the validator does not know.
-3. **No third parties.** No CDNs, fonts, analytics, embeds or error trackers. The Content Security Policy (`worker/headers.js`) allows only the site's own origin, and the browser suite fails on any CSP violation.
-4. **No identifiers that link visits.** No cookies. IP addresses reach the Worker only for rate limits, as a salted hash that changes every day and is kept for two days.
-5. **The user is in control.** Export, import, delete locally, download the server copy, delete the server copy, all from Settings.
+3. **No third parties.** No CDNs, fonts, analytics, embeds or error trackers. The Content Security Policy (`worker/headers.js`) allows only the site's own origin, and the browser suite fails on any CSP violation. Pages are served with `Cache-Control: no-transform`, so Cloudflare zone features such as Web Analytics, Zaraz or Rocket Loader cannot inject their scripts into the HTML (`npm run prove:live` checks a page fetched as a browser).
+4. **Microphone stays local.** Microphone audio is analysed in memory (`src/core/input/mic.js`): only the recognised note number is used; samples are never stored, recorded or sent. Echo cancellation and other processing are off, and the app's own sound is not played for microphone notes. `Permissions-Policy` allows the microphone for the site itself only.
+5. **No identifiers that link visits.** No cookies. IP addresses reach the Worker only for rate limits, as a salted hash that changes every day and is kept for two days.
+6. **The user is in control.** Export, import, delete locally, download the server copy, delete the server copy, all from Settings.
 
 ## Browser storage (stable keys)
 

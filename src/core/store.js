@@ -65,6 +65,17 @@ export const DEFAULT_SETTINGS = {
 	idleSec: 90,
 	dailyGoalMin: 10,
 	autoSync: true,
+	// "auto" = the language's own system (locale meta.noteNames), or a NOTE_NAME_SYSTEMS value.
+	noteNames: "auto",
+	// Piece page: names and suggested fingers on the score, falling notes, next-note marks.
+	scoreNames: false,
+	scoreFingers: false,
+	fallingNotes: false,
+	nextNotes: true,
+	// Microphone input was on: restart it on the next page if permission is still granted.
+	micOn: false,
+	// Free practice: last configuration (normalized by freeConfig in content/catalog.js).
+	freePractice: null,
 };
 
 export function getSettings() {

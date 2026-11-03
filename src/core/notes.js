@@ -3,11 +3,15 @@
 // A spelled note is { step: "C".."B", alter: -1 | 0 | 1, octave } in scientific pitch
 // notation, where C4 is middle C (MIDI 60). `octave: null` means "any octave" (pitch class).
 //
-// Two naming systems exist and each locale picks one (locale meta.noteNames):
+// Three naming systems; each locale has a default (locale meta.noteNames) and the user can
+// pick another in Settings (settings.noteNames, NOTE_NAME_SYSTEMS):
 //   "letters"  : C D E F G A B with ♯/♭ (English and most languages)
 //   "h-system" : C D E F G A H; B means B♭; sharps add -is, flats -es (Finnish, German, Nordic)
+//   "solfege"  : fixed do, Do Re Mi Fa Sol La Si with ♯/♭ (Romance languages, many teachers)
 
 export const STEPS = ["C", "D", "E", "F", "G", "A", "B"];
+export const NOTE_NAME_SYSTEMS = ["letters", "h-system", "solfege"];
+const SOLFEGE = { C: "Do", D: "Re", E: "Mi", F: "Fa", G: "Sol", A: "La", B: "Si" };
 const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 
 /** Full piano range; inputs outside it are ignored. */
@@ -40,9 +44,16 @@ export function letterName(step, alter = 0) {
 	return step + (alter === 1 ? "♯" : alter === -1 ? "♭" : "");
 }
 
-/** Short display name in the locale's naming system. */
+/** Fixed-do solfège: Do Re Mi Fa Sol La Si with ♯/♭. */
+export function solfegeName(step, alter = 0) {
+	return SOLFEGE[step] + (alter === 1 ? "♯" : alter === -1 ? "♭" : "");
+}
+
+/** Short display name in a naming system ("letters", "h-system" or "solfege"). */
 export function noteName(step, alter, noteNames) {
-	return noteNames === "h-system" ? hSystemName(step, alter) : letterName(step, alter);
+	if (noteNames === "h-system") return hSystemName(step, alter);
+	if (noteNames === "solfege") return solfegeName(step, alter);
+	return letterName(step, alter);
 }
 
 /** Stable ASCII key used in stored progress: "C4", "F#4", "Bb3"; pitch class when octave is null. */

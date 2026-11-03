@@ -39,4 +39,4 @@ The files are cropped and resized copies made by `scripts/build-photos.mjs`; the
 
 ## Development and test tools (not shipped)
 
-These are installed by npm for building and testing and are not part of the deployed site: esbuild (MIT), Wrangler (MIT or Apache-2.0), playwright-core (Apache-2.0), axe-core (MPL-2.0), Lighthouse (Apache-2.0) and their dependencies. See `package-lock.json` and `tests/browser/package-lock.json` for the exact versions.
+The optional Docker image (`Dockerfile`) is based on the official `node:24-alpine` image (Node.js is MIT licensed; the Alpine packages keep their own licences). These are installed by npm for building and testing and are not part of the deployed site: esbuild (MIT), Wrangler (MIT or Apache-2.0), playwright-core (Apache-2.0), axe-core (MPL-2.0), Lighthouse (Apache-2.0) and their dependencies. See `package-lock.json` and `tests/browser/package-lock.json` for the exact versions.

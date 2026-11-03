@@ -53,7 +53,7 @@ export function flows(open) {
 					await page.waitForSelector(".feedback .bad");
 					const text = await page.textContent(".feedback");
 					assert.match(text, /viivalla|välissä|apuviivalla|alapuolella/);
-					assert.equal(await page.locator(".key.is-target .key-mark").first().textContent(), "✓");
+					assert.match(await page.locator(".key.is-target .key-mark").first().evaluate((el) => getComputedStyle(el, "::before").content), /✓/);
 				}
 				await press(page, midi);
 			}
@@ -96,6 +96,52 @@ export function flows(open) {
 				await press(ear, keyToMidi(await ear.getAttribute("section.question", "data-key")));
 			}
 			await ear.waitForSelector("#summary-h");
+		},
+		"free practice: name the notes with the keyboard only, with one hint": async () => {
+			const page = await open("/vapaa-harjoitus/", { mode: "unsupported" });
+			await page.selectOption("#free-clef", "bass");
+			await page.selectOption("#free-low", "C3");
+			await page.selectOption("#free-high", "C4");
+			await page.selectOption("#free-mode", "name");
+			await page.click("text=Aloita harjoitus");
+			await page.waitForSelector("section.question[data-key]");
+			await page.click("text=Vihje");
+			await page.waitForFunction(() => /Vihje:/.test(document.querySelector(".feedback")?.textContent || ""));
+			await page.focus(".answers .answer");
+			for (let i = 1; i <= 20; i++) {
+				await waitCount(page, i);
+				const key = await page.getAttribute("section.question", "data-key");
+				// Finnish names: H is B natural.
+				await page.keyboard.press(key[0] === "B" ? "h" : key[0].toLowerCase());
+			}
+			await page.waitForSelector("#summary-h");
+			assert.match(await page.textContent("dl.facts"), /95/);
+			assert.match(page.url(), /c=bass&lo=C3&hi=C4/);
+		},
+		"piece: note names, fingering, falling notes and the print view": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector("#score svg");
+			await page.check("text=Näytä nuottien nimet nuoteissa");
+			await page.check("text=Näytä ehdotettu sormitus");
+			await page.check("text=Näytä putoavat nuotit");
+			assert.equal(await page.locator("#score .st-label").count(), 38, "a name under every note of Ukko Nooa");
+			assert.equal(await page.locator("#score .st-finger").first().textContent(), "1");
+			await page.waitForSelector("canvas.falling");
+			await page.click("text=Kuuntele >> nth=-1");
+			await page.waitForTimeout(400);
+			await page.click("text=Pysäytä");
+			await page.emulateMedia({ media: "print" });
+			assert.equal(await page.isVisible("canvas.falling"), false, "falling notes are not printed");
+			assert.equal(await page.isVisible("#score svg >> nth=0"), true, "the score is printed");
+			await page.emulateMedia({ media: "screen" });
+		},
+		"microphone: a played note is recognised (fake 440 Hz tone)": async () => {
+			const page = await open("/laitteet/", { mode: "unsupported" });
+			await page.click("text=Käytä mikrofonia");
+			await page.waitForFunction(() => /Mikrofoni kuuli nuotin A4/.test(document.querySelector("#mic-h")?.parentElement?.textContent || ""), null, { timeout: 8000 });
+			assert.equal(await page.getAttribute("#mic-toggle", "aria-pressed"), "true");
+			await page.click("text=Lopeta mikrofonin käyttö");
+			assert.equal(await page.getAttribute("#mic-toggle", "aria-pressed"), "false");
 		},
 		"rhythm: quiz round and a tap round": async () => {
 			const page = await open("/rytmiharjoitus/?l=rhythm-values", { mode: "granted" });
@@ -216,6 +262,47 @@ export function flows(open) {
 			assert.match(await page.textContent("h1"), /Ensimmäiset nuotit/);
 			await page.goto(`${ctx.base}/harjoitus/?l=keys&m=single`);
 			await page.waitForSelector("section.question[data-key]", { timeout: 10000 });
+			await page.context().setOffline(false);
+		},
+		"pwa: installable, fully cached, new pages, samples and photos work offline": async (ctx) => {
+			const page = await open("/", { mode: "granted" });
+			const cdp = await page.context().newCDPSession(page);
+			const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
+			// Test contexts are incognito, where Chrome never offers installing ("in-incognito");
+			// Chromium lists every other problem too (manifest, icons, service worker), so the rest must be empty.
+			const errors = installabilityErrors.filter((e) => e.errorId !== "in-incognito");
+			assert.deepEqual(errors, [], `installability errors: ${JSON.stringify(errors)}`);
+			const manifest = await (await fetch(`${ctx.base}/manifest.webmanifest`)).json();
+			assert.equal(manifest.id, "/");
+			assert.equal(manifest.display, "standalone");
+			assert.ok(manifest.icons.some((i) => i.purpose === "maskable") && manifest.icons.some((i) => i.sizes === "512x512"));
+			assert.ok(manifest.shortcuts.length >= 3 && manifest.shortcuts.every((s) => s.url.startsWith("/")));
+			// Every shell file and the heavy files (samples, notation engine) end up cached.
+			await page.waitForFunction(
+				async () => {
+					const reg = await navigator.serviceWorker.ready;
+					const s = await new Promise((r) => {
+						const c = new MessageChannel();
+						c.port1.onmessage = (e) => r(e.data);
+						reg.active.postMessage({ type: "status" }, [c.port2]);
+					});
+					return s.done === s.total;
+				},
+				null,
+				{ timeout: 90000, polling: 1000 },
+			);
+			const sample = await page.evaluate(() => Object.values(JSON.parse(document.getElementById("nt-config").textContent).samples.urls)[0]);
+			await page.context().setOffline(true);
+			await page.goto(`${ctx.base}/vapaa-harjoitus/`);
+			await page.waitForSelector("#free-clef");
+			await page.goto(`${ctx.base}/kappaleet/chopin-preludi-e-molli/`);
+			await page.waitForSelector("#score svg");
+			assert.ok(await page.evaluate(async (u) => (await fetch(u)).ok, sample), "a piano sample loads offline");
+			await page.goto(`${ctx.base}/`);
+			await page.waitForFunction(() => {
+				const img = document.querySelector(".photo img");
+				return img && img.complete && img.naturalWidth > 0;
+			}, null, { timeout: 10000 });
 			await page.context().setOffline(false);
 		},
 		"stream: notes light up keys": async () => {

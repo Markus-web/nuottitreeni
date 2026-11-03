@@ -36,6 +36,9 @@ jobs:
       - name: Install
         run: npm ci --ignore-scripts
 
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
       - name: Unit and Worker tests
         run: npm test
 
@@ -47,6 +50,9 @@ jobs:
 
       - name: Install browser test packages
         run: npm ci --prefix tests/browser --ignore-scripts
+
+      - name: Audit browser test packages
+        run: npm audit --prefix tests/browser --audit-level=moderate
 
       - name: Browser suite
         run: node tests/browser/run.mjs
@@ -60,3 +66,23 @@ jobs:
           name: browser-artifacts
           path: tests/browser/artifacts/
           retention-days: 14
+
+  # The app targets the Node LTS lines: the full check runs on .node-version (24), this job
+  # proves that the tests and the build also work on the older and the newest LTS.
+  node-versions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node: [22, 26]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build

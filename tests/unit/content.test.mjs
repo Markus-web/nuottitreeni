@@ -3,9 +3,9 @@
 import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
 import { test } from "node:test";
-import { KEY_SIGS, PIECES, PITCH_LESSONS, RHYTHM_LESSONS } from "../../src/content/catalog.js";
+import { KEY_SIGS, PIECES, PITCH_LESSONS, RHYTHM_LESSONS, barBeats } from "../../src/content/catalog.js";
 import { BOTTOM_LINE } from "../../src/core/explain.js";
-import { checkBars, parseMelody } from "../../src/core/notation.js";
+import { bars, checkBars, parseMelody } from "../../src/core/notation.js";
 import { STEPS, hSystemName, letterName, midiOf } from "../../src/core/notes.js";
 
 // Every locale file is checked, so a new translation gets the same tests.
@@ -110,7 +110,8 @@ test("lesson pools stay on the piano and key signatures match", () => {
 test("built-in pieces have complete bars and sensible ranges", () => {
 	for (const p of PIECES) {
 		const items = parseMelody(p.right);
-		assert.deepEqual(checkBars(items, p.time[0]), [], `${p.id} bar lengths`);
+		assert.deepEqual(checkBars(items, barBeats(p.time), { pickup: p.pickup === true }), [], `${p.id} bar lengths`);
+		if (p.pickup) assert.ok(bars(items)[0].reduce((a, it) => a + it.beats, 0) < barBeats(p.time), `${p.id} upbeat is shorter than a bar`);
 		for (const it of items) if (it.type === "note") for (const n of it.notes) {
 			const m = midiOf(n);
 			assert.ok(m >= 48 && m <= 84, `${p.id} note ${m} in a comfortable range`);

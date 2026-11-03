@@ -10,10 +10,10 @@ import { bars, parseMelody, systems, toStaffItems } from "../core/notation.js";
 import { noteName } from "../core/notes.js";
 import { renderStaff } from "../core/staff.js";
 import { esc } from "./layout.js";
-import { arrowLeft, arrowRight, ear, musicNote, musicNotes, pianoKeys } from "../content/icons.js";
+import { arrowLeft, arrowRight, ear, musicNote, musicNotes, pianoKeys, textAa } from "../content/icons.js";
 import { svgIcon } from "../core/icon.js";
 
-const MODE_ICONS = { single: musicNote, row: musicNotes, ear, quiz: musicNote, tap: pianoKeys };
+const MODE_ICONS = { single: musicNote, row: musicNotes, ear, name: textAa, quiz: musicNote, tap: pianoKeys };
 
 const para = (texts) => texts.map((p) => `<p>${esc(p)}</p>`).join("\n");
 
@@ -121,7 +121,8 @@ ${photo(ctx, "keys")}
 <p id="practice-summary">${esc(t("home.practiceEmpty"))}</p></section>
 <section aria-labelledby="pitch-h"><h2 id="pitch-h">${esc(t("home.pitchHeading"))}</h2>
 <p>${esc(t("home.pitchIntro"))}</p>
-<ol class="cards" id="lesson-cards">${lessonCards}</ol></section>
+<ol class="cards" id="lesson-cards">${lessonCards}</ol>
+<p><a class="standalone" href="${site.path("freePractice", loc)}">${esc(t("free.homeLink"))}${svgIcon(arrowRight)}</a></p></section>
 <section aria-labelledby="rhythm-h"><h2 id="rhythm-h">${esc(t("home.rhythmHeading"))}</h2>
 <p>${esc(t("home.rhythmIntro"))}</p>
 <ul class="cards" id="rhythm-cards">${rhythmCards}</ul></section>
@@ -265,6 +266,9 @@ ${extra}`,
 export function practicePage(ctx) {
 	return shell(ctx, "practice", "practice", ctx.t("drill.titleSuffix"));
 }
+export function freePracticePage(ctx) {
+	return shell(ctx, "freePractice", "practice", ctx.t("free.title"), ctx.t("free.intro"));
+}
 export function rhythmPracticePage(ctx) {
 	return shell(ctx, "rhythmPractice", "rhythm", ctx.t("home.rhythmHeading"));
 }
@@ -354,7 +358,7 @@ export function renderSystems(ctx, piece, stateFor = () => "") {
 export function piecePage(ctx, piece) {
 	const { t, site, loc, dict } = ctx;
 	const m = dict.piecesMeta[piece.id];
-	const key = dict.piece.keyMajor[piece.fifths] ?? "";
+	const key = (piece.minor ? dict.piece.keyMinor : dict.piece.keyMajor)[piece.fifths] ?? "";
 	const barCount = bars(parseMelody(piece.right)).length;
 	const figure = t("piece.figure", { title: m.title, composer: piece.composer, key, time: `${piece.time[0]}/${piece.time[1]}`, bars: barCount });
 	const crumbs = [

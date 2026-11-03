@@ -79,10 +79,14 @@ try {
 			...RHYTHM_LESSONS.map((r) => `/rytmi/${fi.slugs.rhythm[r.id]}/`),
 			"/harjoitus/?l=treble-c4-g4&m=single",
 			"/harjoitus/?l=keys&m=single",
+			"/harjoitus/?l=treble-c4-c5&m=name",
+			"/vapaa-harjoitus/",
+			"/vapaa-harjoitus/?c=grand&lo=F2&hi=G5&k=-2&a=1&m=name",
 			"/rytmiharjoitus/?l=rhythm-values",
 			"/rytmiharjoitus/?l=rhythm-play",
 			"/kappaleet/",
 			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/`,
+			`/kappaleet/${fi.slugs.pieces["chopin-preludi"]}/`,
 			"/paivakirja/",
 			"/laitteet/",
 			"/asetukset/",
@@ -94,7 +98,7 @@ try {
 			"/lisenssit/",
 			"/404.html",
 		];
-		const enPaths = ["/en/", `/en/lessons/${en.slugs.lessons["treble-c4-g4"]}/`, "/en/practice/?l=treble-c4-g4&m=single", "/en/settings/", "/en/pieces/", "/en/help/"];
+		const enPaths = ["/en/", `/en/lessons/${en.slugs.lessons["treble-c4-g4"]}/`, "/en/practice/?l=treble-c4-g4&m=single", "/en/free-practice/", "/en/settings/", "/en/pieces/", "/en/help/"];
 		const combos = [
 			{ theme: "dark", width: 1280, deep: true },
 			{ theme: "light", width: 1280, deep: false },
@@ -133,7 +137,8 @@ try {
 		const missProblems = [...(await axe(page)).map((v) => `axe ${v}`), ...(await designSlop(page)).map((p) => `slop ${p}`)];
 		await page.emulateMedia({ forcedColors: "active" });
 		missProblems.push(...(await axe(page)).map((v) => `axe forced-colors ${v}`));
-		if ((await page.locator(".key.is-target .key-mark").first().textContent()) !== "✓") missProblems.push("target marker missing");
+		const mark = await page.locator(".key.is-target .key-mark").first().evaluate((el) => getComputedStyle(el, "::before").content);
+		if (!mark.includes("✓")) missProblems.push(`target marker missing (${mark})`);
 		await page.screenshot({ path: join(artifacts, "shots", "drill-miss-forced-colors.png"), fullPage: true });
 		record("aaa", "drill after a miss, incl. forced colours", missProblems);
 		await closeContexts();

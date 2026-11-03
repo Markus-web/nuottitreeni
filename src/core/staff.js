@@ -7,7 +7,7 @@
 //   timeSig: [4, 4] | null,
 //   items: [
 //     { type: "note", notes: [{ step, alter, octave, clef, written }], value: "w"|"h"|"hd"|"q"|"qd"|"e",
-//       label?, state?: "current"|"ok"|"bad"|"done", beam?: "begin"|"end" },
+//       label?, finger?: 1-5, state?: "current"|"ok"|"bad"|"done", beam?: "begin"|"end" },
 //     { type: "rest", value: "w"|"h"|"q"|"e", clef? },
 //     { type: "bar" } | { type: "final" }
 //   ],
@@ -221,6 +221,13 @@ function renderNote(out, item, cx, yOf, bottomY) {
 		const lowest = Math.max(...ys.map((v) => v.y));
 		const ly = Math.max(bottomY[ys[ys.length - 1].clef] + 30, lowest + (up ? 22 : 3.5 * GAP + 16));
 		parts.push(text(cx, ly, item.label, "st-label", ' text-anchor="middle"'));
+	}
+	if (item.finger) {
+		// Finger number above the staff (or above a high note), clear of the current-note marker.
+		const staffTop = bottomY[clef0] - STAFF_SPAN;
+		const highest = Math.min(...ys.map((v) => v.y)) - (up ? 3.5 * GAP + 6 : 10);
+		const fy = Math.max(14, Math.min(staffTop - 38, highest - 22));
+		parts.push(text(cx, fy, String(item.finger), "st-finger", ' text-anchor="middle"'));
 	}
 	if (item.state === "current") {
 		const topY = bottomY[clef0] - STAFF_SPAN - 26;

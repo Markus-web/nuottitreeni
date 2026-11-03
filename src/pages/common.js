@@ -7,6 +7,7 @@ import { Sound } from "../core/sound.js";
 import { getSettings, saveSettings, storageAvailable } from "../core/store.js";
 import { SyncClient } from "../core/sync.js";
 import { svgIcon } from "../core/icon.js";
+import { NOTE_NAME_SYSTEMS } from "../core/notes.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -73,6 +74,7 @@ function setupDeviceStatus(ctx) {
 	const { hub, t } = ctx;
 	const status = $("#device-status");
 	const button = $("#device-connect");
+	const mic = $("#mic-toggle");
 	const render = ({ state, names }) => {
 		if (!status) return;
 		status.dataset.state = state === "connected" ? "on" : "off";
@@ -90,7 +92,11 @@ function setupDeviceStatus(ctx) {
 							: state === "none-found"
 								? t("device.noDevices")
 								: t("device.statusNone");
-		if (button) button.hidden = !hub.web.supported || state === "connected" || state === "connecting";
+		if (button) button.hidden = !hub.web.supported || state === "connecting" || hub.web.inputs().some((i) => i.state === "connected");
+		if (mic) {
+			mic.hidden = !hub.mic.supported;
+			mic.setAttribute("aria-pressed", String(hub.mic.active));
+		}
 	};
 	hub.addEventListener("status", (e) => render(e.detail));
 	render({ state: hub.state, names: [] });
@@ -98,6 +104,27 @@ function setupDeviceStatus(ctx) {
 		ctx.sound.unlock();
 		hub.connectMidi().catch(() => {});
 	});
+	mic?.addEventListener("click", () => toggleMic(ctx).catch(() => {}));
+	// The microphone was on on the previous page: restart it without asking again.
+	if (getSettings().micOn && hub.mic.supported) hub.mic.permission().then((p) => p === "granted" && hub.startMic(t("device.mic")).catch(() => {}));
+}
+
+/** Microphone on or off (header button and the Devices page). Remembers the choice. */
+export async function toggleMic(ctx) {
+	const { hub, t } = ctx;
+	if (hub.mic.active) {
+		hub.stopMic();
+		saveSettings({ micOn: false });
+		return;
+	}
+	try {
+		await hub.startMic(t("device.mic"));
+		saveSettings({ micOn: true });
+	} catch (e) {
+		const status = $("#device-status");
+		if (status) status.textContent = e?.code === "unsupported" ? t("devicesPage.micUnsupported") : t("devicesPage.micDenied");
+		throw e;
+	}
 }
 
 function setupServiceWorker(ctx) {
@@ -175,12 +202,16 @@ export async function boot() {
 	const hub = new InputHub();
 	const sound = new Sound(cfg.samples);
 	const recorder = new Recorder(hub);
+	hub.mic.isMuted = () => sound.isSounding();
 	const sync = new SyncClient();
-	const ctx = { cfg, lang, dict, t, f, hub, sound, recorder, sync, paths: cfg.paths, noteNames: dict.meta.noteNames, el, $ };
+	const chosenNames = getSettings().noteNames;
+	const noteNames = NOTE_NAME_SYSTEMS.includes(chosenNames) ? chosenNames : dict.meta.noteNames;
+	const ctx = { cfg, lang, dict, t, f, hub, sound, recorder, sync, paths: cfg.paths, noteNames, el, $ };
 
 	// Audio may only start after a user gesture.
 	const unlock = () => {
 		sound.unlock();
+		hub.mic.resume();
 		(window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(() => getSettings().sound && sound.preload());
 	};
 	addEventListener("pointerdown", unlock, { once: true, capture: true });
@@ -189,7 +220,8 @@ export async function boot() {
 	hub.addEventListener("note", (e) => {
 		const { midi, on, vel, source } = e.detail;
 		const s = getSettings();
-		if (source === "device" && !s.playIncoming) return;
+		// Microphone notes are never played back: the microphone would hear them again.
+		if (source === "mic" || (source === "device" && !s.playIncoming)) return;
 		if (on) sound.play(midi, vel);
 		else sound.stop(midi);
 	});

@@ -11,6 +11,7 @@ export const PAGE_KEYS = [
 	"lesson",
 	"rhythm",
 	"practice",
+	"freePractice",
 	"rhythmPractice",
 	"pieces",
 	"piece",

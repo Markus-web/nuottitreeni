@@ -5,16 +5,20 @@
 //   Imported MIDI: own grand-staff view of the next steps.
 // Wait mode (default, untimed): a step advances when all its notes are played, any order.
 // Tempo mode (optional): metronome with count-in; each note is judged against its beat.
+// View options (saved in settings): note names and suggested fingering on built-in scores,
+// falling notes above the keyboard, marks on the next keys; the score can be printed.
 import { PIECES, altersFor } from "../content/catalog.js";
+import { FallingNotes } from "../core/falling.js";
+import { suggestFingers } from "../core/fingering.js";
 import { PianoKeyboard } from "../core/keyboard.js";
 import { melodySteps, parseMelody, systems } from "../core/notation.js";
-import { midiLabel, spellMidi } from "../core/notes.js";
+import { midiLabel, noteName, spellMidi } from "../core/notes.js";
 import { recordPiece } from "../core/progress.js";
 import { cursorTo, createScore, extractSteps, loadScore, recolor, toBinaryString } from "../core/score.js";
 import { parseSmf, toSteps } from "../core/smf.js";
 import { Metronome } from "../core/sound.js";
 import { renderStaff } from "../core/staff.js";
-import { getDeviceId, getProgress, idb, saveProgress } from "../core/store.js";
+import { getDeviceId, getProgress, getSettings, idb, saveProgress, saveSettings } from "../core/store.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el } from "./common.js";
 
@@ -36,14 +40,25 @@ async function loadEngine() {
 		const box = $("#score");
 		const lines = systems(builtIn.right, { alters });
 		const title = ctx.dict.piecesMeta[builtIn.id].title;
+		const melody = parseMelody(builtIn.right).filter((it) => it.type === "note");
+		const fingers = suggestFingers(melody.map((it) => it.notes[it.notes.length - 1]));
+		let last = -1;
 		const show = (current) => {
+			last = current;
+			const { scoreNames, scoreFingers } = getSettings();
 			box.innerHTML = lines
 				.map((sys, li) => {
 					let step = sys.firstStep;
 					const items = sys.items.map((it) => {
 						if (it.type !== "note") return it;
 						const i = step++;
-						return { ...it, state: i < current ? "done" : i === current ? "current" : "", midi: i === current ? steps[i]?.notes[0].midi : undefined };
+						return {
+							...it,
+							state: i < current ? "done" : i === current ? "current" : "",
+							midi: i === current ? steps[i]?.notes[0].midi : undefined,
+							label: scoreNames ? it.notes.map((n) => noteName(n.step, n.alter, noteNames)).join("+") : undefined,
+							finger: scoreFingers ? fingers[i] : undefined,
+						};
 					});
 					return renderStaff({
 						staff: "treble",
@@ -58,7 +73,7 @@ async function loadEngine() {
 				.join("");
 			box.querySelector(".is-current")?.scrollIntoView({ block: "nearest", inline: "center" });
 		};
-		return { steps, show };
+		return { steps, show, redraw: () => show(last) };
 	}
 	const id = new URLSearchParams(location.search).get("id");
 	const rec = id ? await idb.get("pieces", id).catch(() => null) : null;
@@ -101,7 +116,7 @@ if (!engine || !engine.steps.length) {
 	root.append(el("p", { className: "notice", text: builtIn ? t("piece.scoreFailed") : t("pieces.importFailed") }), el("p", {}, el("a", { className: "standalone", href: ctx.paths.pieces, text: t("pieces.title") })));
 } else setup(engine);
 
-function setup({ steps, show }) {
+function setup({ steps, show, redraw }) {
 	const status = el("p", { className: "count" });
 	const feedback = el("div", { className: "feedback", "aria-live": "polite" });
 	if (!builtIn) {
@@ -134,22 +149,57 @@ function setup({ steps, show }) {
 	const startBtn = el("button", { type: "button", className: "btn btn-primary", icon: icons.play, text: t("piece.practice") });
 	const listenBtn = el("button", { type: "button", className: "btn", icon: icons.speakerHigh, text: t("piece.listen") });
 	const stopBtn = el("button", { type: "button", className: "btn", icon: icons.stop, text: t("piece.stop") });
+	const printBtn = el("button", { type: "button", className: "btn", icon: icons.printer, text: t("piece.print") });
+	printBtn.addEventListener("click", () => window.print());
+	const option = (key, label, onChange) => {
+		const input = el("input", { type: "checkbox" });
+		input.checked = getSettings()[key];
+		input.addEventListener("change", () => {
+			saveSettings({ [key]: input.checked });
+			onChange(input.checked);
+		});
+		return el("label", { className: "check" }, input, label);
+	};
+	const viewSet = el(
+		"fieldset",
+		{},
+		el("legend", { text: t("piece.viewHeading") }),
+		redraw ? option("scoreNames", t("piece.showNames"), () => redraw()) : null,
+		redraw ? option("scoreFingers", t("piece.showFingers"), () => redraw()) : null,
+		option("nextNotes", t("piece.nextNotes"), (on) => !on && keyboard.clearMarks()),
+		option("fallingNotes", t("piece.falling"), (on) => setFalling(on)),
+	);
 	const kbdBox = el("div");
 	root.append(
-		el("h2", { id: "practice-h", text: t("piece.practice") }),
-		modeSet,
-		handSet,
+		...[el("h2", { id: "practice-h", text: t("piece.practice") }), modeSet, handSet].filter(Boolean),
 		el("div", { className: "field" }, el("label", { for: "from-bar", text: t("piece.fromBar") }), fromInput),
 		el("div", { className: "field" }, el("label", { for: "to-bar", text: t("piece.toBar") }), toInput),
 		el("label", { className: "check" }, loop, t("piece.loop")),
 		el("div", { className: "field" }, el("label", { for: "piece-tempo", text: t("piece.tempo") }), tempo, " ", tempoOut),
-		el("div", { className: "actions" }, startBtn, listenBtn, stopBtn),
+		el("div", { className: "actions" }, startBtn, listenBtn, stopBtn, printBtn),
+		viewSet,
 		status,
 		feedback,
 		kbdBox,
 	);
 	const keyboard = new PianoKeyboard(kbdBox, { t, noteNames, low, high, id: "piece-kbd" });
 	keyboard.addEventListener("key", (e) => hub.screen(e.detail.midi, e.detail.on));
+
+	// Falling notes: off by default; moves only while a tempo run or Listen plays.
+	let falling = null;
+	function setFalling(on) {
+		if (on && !falling) {
+			falling = new FallingNotes(keyboard);
+			falling.setSteps(steps);
+			falling.draw(steps[0].beat);
+		} else if (!on && falling) {
+			falling.destroy();
+			falling = null;
+		}
+	}
+	setFalling(getSettings().fallingNotes);
+	// Saved view options apply at once (the page arrives with the plain build-time score).
+	if (redraw && (getSettings().scoreNames || getSettings().scoreFingers)) redraw();
 
 	const value = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value ?? "both";
 	function activeSteps() {
@@ -166,8 +216,9 @@ function setup({ steps, show }) {
 		keyboard.clearMarks();
 		const step = list[i];
 		if (!step) return;
-		for (const n of step.notes) keyboard.mark(n.midi, "target");
+		if (getSettings().nextNotes) for (const n of step.notes) keyboard.mark(n.midi, "target");
 		keyboard.scrollTo(step.notes[0].midi);
+		if (falling && !falling.raf) falling.draw(step.beat);
 		status.textContent = t("piece.progress", { i: i + 1, n: list.length });
 		show(step.iter);
 	}
@@ -175,7 +226,10 @@ function setup({ steps, show }) {
 	let session = null;
 	let stopTempo = null;
 	let stopListen = null;
+	let run = 0; // increases on every stop, so a pending loop restart knows it was cancelled
 	function stopAll() {
+		run++;
+		falling?.stop();
 		session = null;
 		stopTempo?.();
 		stopTempo = null;
@@ -187,6 +241,7 @@ function setup({ steps, show }) {
 	function startWait() {
 		const list = activeSteps();
 		session = { list, i: 0, pressed: new Set(), wrong: 0 };
+		falling?.setSteps(list);
 		feedback.replaceChildren();
 		showStep(list, 0);
 		keyboard.setFocus(list[0].notes[0].midi, true);
@@ -235,6 +290,8 @@ function setup({ steps, show }) {
 		const list = activeSteps();
 		const { spb, times, bpm } = timeline(list);
 		const metronome = new Metronome(sound);
+		const thisRun = run;
+		const started = performance.now();
 		const hits = [];
 		const listener = (e) => e.detail.on && hits.push({ midi: e.detail.midi, at: performance.now() });
 		hub.addEventListener("note", listener);
@@ -242,6 +299,11 @@ function setup({ steps, show }) {
 		const timers = [];
 		const totalBeats = Math.ceil(times[times.length - 1] / spb) + 2;
 		let t0 = null;
+		if (falling) {
+			falling.setSteps(list);
+			// Before the count-in ends (t0 unknown) estimate from the start: four beats early.
+			falling.play(() => list[0].beat + (t0 != null ? (performance.now() - t0) / spb : (performance.now() - started) / spb - 4));
+		}
 		metronome.start({
 			bpm,
 			beats: 4 + totalBeats,
@@ -275,6 +337,9 @@ function setup({ steps, show }) {
 			if (builtIn) saveProgress(recordPiece(getProgress(), getDeviceId(), { id: builtIn.id, wrong: total - ok + wrong }, Date.now()));
 			session = null;
 			keyboard.clearMarks();
+			falling?.stop();
+			// Loop: start the same bars again after a short pause, with a new count-in.
+			if (loop.checked && run === thisRun) setTimeout(() => run === thisRun && startTempo(), 1500);
 		}
 		stopTempo = () => {
 			for (const x of timers) clearTimeout(x);
@@ -295,6 +360,12 @@ function setup({ steps, show }) {
 			timers.push(setTimeout(() => showStep(list, i), times[i]));
 		});
 		const stopSeq = sound.sequence(notes);
+		if (falling) {
+			const started = performance.now();
+			falling.setSteps(list);
+			falling.play(() => list[0].beat + (performance.now() - started) / spb);
+			timers.push(setTimeout(() => falling?.stop(), times[times.length - 1] + spb * 2));
+		}
 		stopListen = () => {
 			stopSeq();
 			for (const x of timers) clearTimeout(x);

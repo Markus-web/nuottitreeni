@@ -319,6 +319,11 @@ h2:focus {
 .header-row .lang-link {
 	margin-left: auto;
 }
+#mic-toggle[aria-pressed="true"] {
+	border-color: var(--ok);
+	color: var(--ok);
+	font-weight: 600;
+}
 .device-status[data-state="on"] {
 	color: var(--ok);
 }
@@ -570,6 +575,42 @@ summary {
 	min-height: var(--target);
 }
 
+/* Name-the-note answers: one button per note name; the right and wrong answer get a mark as
+   well as a colour (1.4.1). */
+.answers {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 1rem 0;
+	max-width: var(--measure);
+}
+.answers .answer {
+	min-width: 3.5rem;
+	font-weight: 600;
+}
+.answers .is-target {
+	border-color: var(--ok);
+	color: var(--ok);
+}
+.answers .is-target::after {
+	content: " ✓";
+	content: " ✓" / "";
+}
+.answers .is-wrong {
+	border-color: var(--bad);
+	color: var(--bad);
+}
+.answers .is-wrong::after {
+	content: " ✗";
+	content: " ✗" / "";
+}
+
+/* Falling notes (src/core/falling.js): a canvas above the keys inside the keyboard scroller. */
+.falling {
+	display: block;
+	margin: 0 auto 0.25rem;
+}
+
 /* Photos (src/content/photos.js): text-column width, 2:1, space reserved before loading (no
    layout shift), credit line underneath. */
 .photo {
@@ -686,6 +727,12 @@ summary {
 	font-size: 17px;
 	fill: var(--link);
 }
+.st-finger {
+	font-family: var(--font-heading);
+	font-weight: 700;
+	font-size: 15px;
+	fill: var(--text);
+}
 .st-marker {
 	fill: var(--link);
 }
@@ -771,6 +818,16 @@ summary {
 	line-height: 1;
 	margin-bottom: 0.25rem;
 	pointer-events: none;
+}
+/* Marks as generated content with empty alternative text: seen, not read twice (the key's
+   accessible name already says "right key" or "you played this"). */
+.key.is-target .key-mark::before {
+	content: "✓";
+	content: "✓" / "";
+}
+.key.is-wrong .key-mark::before {
+	content: "✗";
+	content: "✗" / "";
 }
 .key .key-c4 {
 	width: 0.45rem;
@@ -1264,6 +1321,13 @@ body.stream .kbd-scroll {
 	.actions,
 	.banner,
 	.photo,
+	fieldset,
+	.field,
+	.check,
+	.falling,
+	.count,
+	.feedback,
+	#practice-h,
 	.skip-link,
 	button {
 		display: none !important;

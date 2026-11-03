@@ -85,6 +85,8 @@ export class PianoKeyboard extends EventTarget {
 			this.buttons.set(k.midi, el);
 			kbd.append(el);
 		}
+		// Optional lane above the keys (falling notes): inside the scroller, so it scrolls with them.
+		if (this.lane) scroll.append(this.lane);
 		scroll.append(kbd);
 		wrap.append(scroll);
 		if (this.interactive) {
@@ -100,6 +102,19 @@ export class PianoKeyboard extends EventTarget {
 		this.container.replaceChildren(wrap);
 		for (const [midi, state] of this.marks) this.applyMark(midi, state);
 		requestAnimationFrame(() => this.scrollTo(this.focusMidi));
+	}
+
+	/** Put a node (the falling-notes canvas) above the keys, or remove it with null. */
+	setLane(node) {
+		this.lane?.remove();
+		this.lane = node;
+		if (node && this.scroll) this.scroll.insertBefore(node, this.kbd);
+	}
+
+	/** Position of a key inside the keyboard strip: { x, w } in CSS pixels, or null if not shown. */
+	keyBox(midi) {
+		const b = this.buttons?.get(midi);
+		return b ? { x: b.offsetLeft, w: b.offsetWidth } : null;
 	}
 
 	bind(kbd) {
@@ -209,7 +224,8 @@ export class PianoKeyboard extends EventTarget {
 		if (!el) return;
 		el.classList.toggle("is-target", state === "target");
 		el.classList.toggle("is-wrong", state === "wrong");
-		el.querySelector(".key-mark").textContent = state === "target" ? "✓" : state === "wrong" ? "✗" : "";
+		// The ✓/✗ mark is drawn by CSS (.is-target/.is-wrong .key-mark::before), not as text, so
+		// the key's visible text stays its name and matches the accessible name (WCAG 2.5.3).
 		if (this.interactive) el.setAttribute("aria-label", this.label(midi));
 	}
 

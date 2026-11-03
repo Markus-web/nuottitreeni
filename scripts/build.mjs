@@ -166,7 +166,7 @@ for (const id of Object.keys(PHOTOS)) {
 }
 const pieces = {};
 for (const p of PIECES) {
-	const xml = toMusicXml({ title: dicts[defaultLocale].piecesMeta[p.id].title, composer: p.composer, fifths: p.fifths, time: p.time, right: p.right, left: p.left, rights: "Transcription MIT licence, Nuottitreeni" });
+	const xml = toMusicXml({ title: dicts[defaultLocale].piecesMeta[p.id].title, composer: p.composer, fifths: p.fifths, time: p.time, right: p.right, left: p.left, pickup: p.pickup, rights: "Transcription MIT licence, Nuottitreeni" });
 	pieces[p.id] = emitHashed("assets/pieces", p.id, "musicxml", xml);
 }
 
@@ -175,7 +175,7 @@ const assets = { css: cssUrl, themeJs, preloadFonts, entries, localeChunks, icon
 const paths = {};
 for (const l of locales) {
 	paths[l] = { lesson: {}, rhythm: {}, piece: {} };
-	for (const k of ["home", "practice", "rhythmPractice", "pieces", "myPiece", "log", "devices", "settings", "glossary", "help", "about", "privacy", "accessibility", "licenses", "stream"]) paths[l][k] = site.path(k, l);
+	for (const k of ["home", "practice", "freePractice", "rhythmPractice", "pieces", "myPiece", "log", "devices", "settings", "glossary", "help", "about", "privacy", "accessibility", "licenses", "stream"]) paths[l][k] = site.path(k, l);
 	for (const x of PITCH_LESSONS) paths[l].lesson[x.id] = site.path("lesson", l, x.id);
 	for (const x of RHYTHM_LESSONS) paths[l].rhythm[x.id] = site.path("rhythm", l, x.id);
 	for (const x of PIECES) paths[l].piece[x.id] = site.path("piece", l, x.id);
@@ -190,6 +190,7 @@ for (const loc of locales) {
 		...PITCH_LESSONS.map((l, i) => ["lesson", P.lessonPage(ctx, l, i)]),
 		...RHYTHM_LESSONS.map((r, i) => ["rhythm", P.rhythmPage(ctx, r, i)]),
 		["practice", P.practicePage(ctx)],
+		["freePractice", P.freePracticePage(ctx)],
 		["rhythmPractice", P.rhythmPracticePage(ctx)],
 		["pieces", P.piecesPage(ctx)],
 		...PIECES.map((p) => ["piece", P.piecePage(ctx, p)]),
@@ -268,16 +269,25 @@ emit(
 	"manifest.webmanifest",
 	`${JSON.stringify(
 		{
+			id: "/",
 			name: dd.site.name,
 			short_name: dd.site.name,
 			description: dd.site.description,
 			lang: defaultLocale,
+			dir: "ltr",
 			start_url: "/",
 			scope: "/",
 			display: "standalone",
 			background_color: "#000000",
 			theme_color: "#000000",
 			categories: ["education", "music"],
+			prefer_related_applications: false,
+			// Long-press menu of the installed app: straight to practice.
+			shortcuts: [
+				{ name: dd.free.title, url: site.path("freePractice", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
+				{ name: dd.pieces.title, url: site.path("pieces", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
+				{ name: dd.log.title, url: site.path("log", defaultLocale), icons: [{ src: icons.png192, sizes: "192x192", type: "image/png" }] },
+			],
 			icons: [
 				{ src: icons.svg, sizes: "any", type: "image/svg+xml" },
 				{ src: icons.png192, sizes: "192x192", type: "image/png" },

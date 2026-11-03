@@ -37,11 +37,23 @@ function check(name, problems) {
 }
 const get = (path, init) => fetch(base + path, { redirect: "manual", ...init });
 
+// Some zones add their own security headers (Cloudflare managed transforms) that replace
+// ours. These are accepted when they are at least as strict; anything else must match exactly.
+const EQUIVALENT = {
+	"Strict-Transport-Security": (v) => /max-age=(\d+)/.test(v ?? "") && Number(/max-age=(\d+)/.exec(v)[1]) >= 31536000 && /includeSubDomains/i.test(v),
+	"Referrer-Policy": (v) => ["no-referrer", "same-origin"].includes(v),
+	// CSP frame-ancestors 'none' already forbids framing; X-Frame-Options is the fallback.
+	"X-Frame-Options": (v) => ["DENY", "SAMEORIGIN"].includes(v),
+};
+const notes = new Set();
+
 function headerProblems(res, extra = {}) {
 	const out = [];
 	for (const [k, v] of Object.entries({ ...SECURITY_HEADERS, ...extra })) {
 		const got = res.headers.get(k);
-		if (got !== v) out.push(`${k}: ${got === null ? "missing" : `"${got}"`}`);
+		if (got === v) continue;
+		if (EQUIVALENT[k]?.(got)) notes.add(`${k}: "${got}" (zone setting, accepted as equivalent)`);
+		else out.push(`${k}: ${got === null ? "missing" : `"${got}"`}`);
 	}
 	return out;
 }
@@ -67,7 +79,10 @@ const homeHtml = await home.text();
 
 // ---- pages and headers ----------------------------------------------------------------------
 check("HTML: security headers", headerProblems(home));
-check("HTML: not cached as immutable", /immutable/.test(home.headers.get("cache-control") || "") ? `cache-control ${home.headers.get("cache-control")}` : []);
+check("HTML: not cached as immutable, no-transform (no zone script injection)", /immutable/.test(home.headers.get("cache-control") || "") || !/no-transform/.test(home.headers.get("cache-control") || "") ? `cache-control ${home.headers.get("cache-control")}` : []);
+// Cloudflare zone features inject scripts only for browser user agents, so ask like a browser.
+const asBrowser = await (await get("/", { headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0 Safari/537.36", Accept: "text/html" } })).text();
+check("HTML for a browser is unmodified (no injected analytics or Zaraz)", /cloudflareinsights|\/cdn-cgi\/zaraz|rocket-loader/.test(asBrowser) ? "the zone injects a script: keep Cache-Control no-transform on pages" : []);
 const lang = /<html lang="([a-z]{2})">/.exec(homeHtml)?.[1];
 check("HTML: lang and title", [!lang && "no <html lang>", !/<title>[^<]{5,}<\/title>/.test(homeHtml) && "no title"]);
 const alternates = [...homeHtml.matchAll(/<link rel="alternate" hreflang="([a-z-]+)" href="([^"]+)">/g)];
@@ -75,7 +90,7 @@ check("HTML: hreflang alternates and x-default", [alternates.length < 2 && `only
 const cssPath = /<link rel="stylesheet" href="(\/assets\/css\/[^"]+)">/.exec(homeHtml)?.[1];
 if (cssPath) {
 	const css = await get(cssPath);
-	check(`asset ${cssPath}: 200, immutable, security headers`, [css.status !== 200 && `HTTP ${css.status}`, !/immutable/.test(css.headers.get("cache-control") || "") && `cache-control ${css.headers.get("cache-control")}`, ...headerProblems(css)]);
+	check(`asset ${cssPath}: 200, immutable, compressible, security headers`, [css.status !== 200 && `HTTP ${css.status}`, (!/immutable/.test(css.headers.get("cache-control") || "") || /no-transform/.test(css.headers.get("cache-control") || "")) && `cache-control ${css.headers.get("cache-control")}`, ...headerProblems(css)]);
 } else check("asset: stylesheet link in HTML", "not found");
 const sw = await get("/sw.js");
 check("sw.js: 200, no-cache", [sw.status !== 200 && `HTTP ${sw.status}`, sw.headers.get("cache-control") !== "no-cache" && `cache-control ${sw.headers.get("cache-control")}`]);
@@ -176,5 +191,6 @@ if (args.includes("--browser")) {
 	}
 }
 
+for (const note of notes) console.log(`note ${note}`);
 console.log(failed ? `\n${failed} check(s) failed for ${base}` : `\nall checks passed for ${base}`);
 process.exit(failed ? 1 : 0);

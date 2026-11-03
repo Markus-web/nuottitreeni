@@ -1,14 +1,15 @@
 // Input hub: one stream of note events from every source (MIDI devices, Bluetooth, USB,
-// on-screen keys, computer keyboard). Applies per-device settings (channel, octave, transpose,
+// microphone, on-screen keys, computer keyboard). Applies per-device settings (channel, octave, transpose,
 // velocity curve, minimum velocity) and keeps a small monitor log for the Devices page.
 //
 // Events (EventTarget):
-//   "note"   detail { midi, on, vel, source: "device"|"screen", device, latency }
+//   "note"   detail { midi, on, vel, source: "device"|"mic"|"screen", device, latency }
 //   "pedal"  detail { down }
 //   "status" detail { state: "none"|"connecting"|"connected"|"unsupported"|"denied"|"none-found", names }
 //   "message" detail { device, text }          (monitor)
 import { getDeviceSettings, getSettings } from "../store.js";
 import { BleMidiSource, UsbMidiSource, WebMidiSource } from "./adapters.js";
+import { MicSource } from "./mic.js";
 import { applyCurve, parseMidiMessage } from "./parse.js";
 
 const PIANO_LOW = 21;
@@ -22,6 +23,7 @@ export class InputHub extends EventTarget {
 		this.web = new WebMidiSource(onMessage, onChange);
 		this.ble = new BleMidiSource(onMessage, onChange);
 		this.usb = new UsbMidiSource(onMessage, onChange);
+		this.mic = new MicSource((midi, on, vel) => this.emitNote(midi, on, vel, "mic", this.mic.name, null), onChange);
 		this.state = this.web.supported ? "none" : "unsupported";
 		this.monitor = [];
 		this.range = { min: null, max: null };
@@ -55,8 +57,17 @@ export class InputHub extends EventTarget {
 		return this.usb.connect();
 	}
 
+	/** Microphone on or off; name is shown in the device status line. */
+	startMic(name) {
+		return this.mic.start(name);
+	}
+
+	stopMic() {
+		this.mic.stop();
+	}
+
 	inputs() {
-		return [...this.web.inputs().filter((i) => i.state === "connected"), ...this.ble.inputs(), ...this.usb.inputs()];
+		return [...this.web.inputs().filter((i) => i.state === "connected"), ...this.ble.inputs(), ...this.usb.inputs(), ...this.mic.inputs()];
 	}
 
 	outputs() {
@@ -67,7 +78,7 @@ export class InputHub extends EventTarget {
 		const names = this.inputs().map((i) => i.name);
 		if (names.length) this.setStatus("connected", names);
 		else if (this.web.access && afterPrompt) this.setStatus("none-found");
-		else if (!this.web.supported && !this.ble.supported && !this.usb.supported) this.setStatus("unsupported");
+		else if (!this.web.supported && !this.ble.supported && !this.usb.supported && !this.mic.supported) this.setStatus("unsupported");
 		else this.setStatus(this.web.supported ? "none" : "unsupported");
 	}
 

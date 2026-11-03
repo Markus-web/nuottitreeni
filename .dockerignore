@@ -1,0 +1,7 @@
+node_modules
+dist
+.wrangler
+tests/browser/node_modules
+tests/browser/artifacts
+.dev.vars
+.git

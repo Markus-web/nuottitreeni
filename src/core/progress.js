@@ -27,7 +27,7 @@ export const LIMITS = {
 	maxCount: 1_000_000,
 	maxMs: 600_000,
 };
-export const LESSON_MODES = ["single", "row", "ear"];
+export const LESSON_MODES = ["single", "row", "ear", "name"];
 export const RHYTHM_MODES = ["quiz", "tap"];
 const DEVICE_RE = /^[a-z0-9]{8,40}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;

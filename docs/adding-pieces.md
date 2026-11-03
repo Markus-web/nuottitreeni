@@ -25,11 +25,15 @@ Built-in pieces are short melodies written in a compact text notation and drawn 
    },
    ```
 
+   Optional fields: `pickup: true` when the piece starts with an upbeat (the first bar is shorter; it becomes the implicit bar 0 in MusicXML), `minor: true` for a minor key (the caption then says E minor instead of G major). Bar length comes from the time signature: `[3, 4]` holds three quarter notes, `[6, 8]` three as well (`barBeats` in `src/content/catalog.js`).
+
    Notation (see the top of `src/core/notation.js`): `C4q` is C in octave 4 (middle C) as a quarter note; values `w`, `hd`, `h`, `qd`, `q`, `e`; `F#5e` and `Bb4h` for sharps and flats; `C4+E4+G4h` for a chord; `rq` for a rest; `|` between bars. Write the notes as they sound: the key signature is applied when drawing, so in G major write `F#4` and it is shown without a sharp.
 
 2. Add the texts in every locale: `piecesMeta.<id>` with `title` and `description`, and `slugs.pieces.<id>`.
 3. Run `npm test`. It checks that every bar has the right number of beats and that the notes stay in a comfortable range (C3 to C6).
-4. Build and open the piece page; play it through in wait mode with the on-screen piano or a keyboard. Check the text version under the score.
+4. Build and open the piece page; play it through in wait mode with the on-screen piano or a keyboard. Check the text version under the score, and turn on "suggested fingering" to see the fingering the app computes (`src/core/fingering.js`: five-finger positions chosen over the whole melody).
+
+Public-domain editions in text form are a good way to check notes: the Mutopia Project (mutopiaproject.org) publishes LilyPond sources, many of them in the public domain. Use them to check pitches and rhythms; write the simplified arrangement yourself.
 
 ## Pull request checklist
 

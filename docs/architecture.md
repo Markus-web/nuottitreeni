@@ -30,10 +30,13 @@ Each page embeds a small JSON block (`#nt-config`) with the page key, locale, as
 |---|---|
 | `core/input/hub.js` | One event stream (`note`, `pedal`, `status`) from all inputs; applies per-device settings (channel, octave, transpose, velocity curve) |
 | `core/input/adapters.js` | Web MIDI, Bluetooth LE MIDI (Web Bluetooth) and USB vendor mode (WebUSB) |
+| `core/input/mic.js`, `core/pitch.js` | Microphone input: pitch detection (YIN) and a note tracker; pauses while the app plays sound |
 | `core/input/parse.js` | Pure parsers for MIDI bytes, BLE-MIDI packets and USB-MIDI packets; the computer-keyboard map |
 | `core/keyboard.js` | The on-screen piano (roving tab stop, arrow keys, marks) |
 | `core/sound.js` | Sampler (nearest sample, pitch shift, release, sustain) and metronome on Web Audio |
-| `core/staff.js` | SVG staff renderer used both at build time and in the browser |
+| `core/staff.js` | SVG staff renderer used both at build time and in the browser (note names below, finger numbers above) |
+| `core/fingering.js` | Suggested right-hand fingering (five-finger positions chosen over the whole melody) |
+| `core/falling.js` | Optional falling-notes view on a canvas above the on-screen keyboard |
 | `core/explain.js` | Staff position maths behind the miss explanations |
 | `core/progress.js` | Progress format v1: record, merge, validate, aggregate (shared with the Worker) |
 | `core/store.js` | `localStorage` and IndexedDB access, guarded for blocked storage |
@@ -47,6 +50,10 @@ Built-in pieces are drawn with the own staff renderer (`renderSystems` in `src/t
 ## Worker (`worker/`)
 
 `wrangler.jsonc` sets `run_worker_first: ["/api/*"]`, so the Worker runs only for the API; every other request is answered by the asset layer without a Worker invocation. The Worker validates progress data with the same code as the browser, stores sync records in D1 keyed by a hash of the code, enforces rate limits, and runs a daily cleanup from a cron trigger. The API contract is in [api.md](api.md).
+
+## Without Cloudflare
+
+`scripts/serve.mjs` serves `dist/` with the same headers and answers `/api/config` with sync turned off; the `Dockerfile` builds the site and runs that server. Any static host works the same way: the app treats a missing sync API as "sync not available". See [self-hosting.md](self-hosting.md#other-hosts-without-sync-codes) and [decision 0010](decisions/0010-hosting-without-cloudflare.md).
 
 ## Service worker (`src/sw.js`)
 

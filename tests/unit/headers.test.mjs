@@ -1,7 +1,7 @@
 // Security headers (worker/headers.js): the single source for API responses and dist/_headers.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CSP, PERMISSIONS_POLICY, SECURITY_HEADERS, headersFile } from "../../worker/headers.js";
+import { ASSET_CACHE, CSP, PAGE_CACHE, PERMISSIONS_POLICY, SECURITY_HEADERS, headersFile } from "../../worker/headers.js";
 
 test("CSP allows only this origin and never inline or eval code", () => {
 	const directives = Object.fromEntries(CSP.split(";").map((d) => d.trim().split(/\s+/)).map(([k, ...v]) => [k, v]));
@@ -15,11 +15,12 @@ test("CSP allows only this origin and never inline or eval code", () => {
 	assert.ok(!/unsafe-(inline|eval|hashes)|wasm-unsafe|https?:|\*/.test(CSP), CSP);
 });
 
-test("Permissions-Policy allows MIDI and USB for this origin and nothing else sensitive", () => {
+test("Permissions-Policy allows MIDI, USB and the microphone for this origin and nothing else sensitive", () => {
 	const features = Object.fromEntries(PERMISSIONS_POLICY.split(",").map((f) => f.trim().split("=")));
 	assert.equal(features.midi, "(self)");
 	assert.equal(features.usb, "(self)");
-	for (const off of ["camera", "microphone", "geolocation", "payment", "serial", "hid"]) assert.equal(features[off], "()", off);
+	assert.equal(features.microphone, "(self)");
+	for (const off of ["camera", "geolocation", "payment", "serial", "hid"]) assert.equal(features[off], "()", off);
 });
 
 test("_headers carries every security header for all paths and the cache rules", () => {
@@ -27,8 +28,12 @@ test("_headers carries every security header for all paths and the cache rules",
 	const all = `${file.split("\n\n")[0]}\n`;
 	assert.match(all, /^\/\*\n/);
 	for (const [k, v] of Object.entries(SECURITY_HEADERS)) assert.ok(all.includes(`  ${k}: ${v}\n`), k);
-	assert.match(file, /\/assets\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
-	assert.match(file, /\/sw\.js\n {2}Cache-Control: no-cache/);
+	// Pages: no-transform (no zone script injection); assets and sw.js detach it first.
+	assert.ok(all.includes(`  Cache-Control: ${PAGE_CACHE}\n`));
+	assert.match(PAGE_CACHE, /no-transform/);
+	assert.ok(file.includes(`/assets/*\n  ! Cache-Control\n  Cache-Control: ${ASSET_CACHE}\n`));
+	assert.doesNotMatch(ASSET_CACHE, /no-transform/);
+	assert.ok(file.includes("/sw.js\n  ! Cache-Control\n  Cache-Control: no-cache\n"));
 	assert.equal(SECURITY_HEADERS["Referrer-Policy"], "no-referrer");
 	assert.match(SECURITY_HEADERS["Strict-Transport-Security"], /max-age=31536000/);
 });

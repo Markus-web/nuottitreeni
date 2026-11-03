@@ -11,6 +11,10 @@ For maintainers. Versions follow Semantic Versioning: a major version for any ch
 
 Self-hosters follow the steps in [self-hosting.md](self-hosting.md#updating).
 
+## Dependency updates
+
+New releases of dependencies are taken only when they are at least 14 days old (Dependabot has a 14-day cooldown), so a broken or compromised release has time to be noticed upstream. The exception is a release that fixes a known security advisory in a version we use: then the fixed version is taken at once (Dependabot security updates skip the cooldown too). Example: Wrangler 4.153.0 was taken 8 days after release because every earlier 4.x pulls in an `undici` with high-severity advisories. Check with `npm audit` and `npm --prefix tests/browser audit`; both must report 0 vulnerabilities before a release.
+
 ## New database migrations
 
 Add a new numbered file in `migrations/` (never edit an applied one). Migrations must work on a database that already has data and must not need a secret. `npm run deploy` applies them before the new Worker goes live, so the old Worker briefly runs against the new schema: add columns and tables first, and remove old ones only in a later release.

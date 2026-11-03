@@ -11,3 +11,6 @@ Short records of choices that shape the code, with the reasons, so they are not 
 | [0005](0005-input-adapters.md) | Web MIDI first, Bluetooth and USB vendor mode as experimental adapters |
 | [0006](0006-licence-and-assets.md) | MIT for the project; third-party assets vendored with their own licences |
 | [0007](0007-seo-defaults-for-copies.md) | Copies are hidden from search engines unless the operator opts in |
+| [0008](0008-microphone-input.md) | Microphone input, analysed in the browser only |
+| [0009](0009-piece-practice-aids.md) | Piece practice aids: names, fingering, falling notes |
+| [0010](0010-hosting-without-cloudflare.md) | Hosting without Cloudflare |

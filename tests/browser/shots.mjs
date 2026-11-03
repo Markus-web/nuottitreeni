@@ -2,7 +2,9 @@
 // Screenshots for design review: builds the test site (unless --no-build), starts wrangler dev
 // and saves full-page PNGs of the given paths at each width and theme.
 //
-// Usage: node tests/browser/shots.mjs [--no-build] [--widths 320,1280] [--themes dark,light] [path ...]
+// Usage: node tests/browser/shots.mjs [--no-build] [--widths 320,1280] [--themes dark,light]
+//        [--settings '{"fallingNotes":true}'] [path ...]
+// --settings: JSON merged into the app settings (nt.v1.settings) before every page loads.
 // Default paths: /, /en/, a lesson, the pieces page, a piece, help, settings.
 // Output: tests/browser/artifacts/review/<path>-<theme>-<width>.png
 import { mkdirSync } from "node:fs";
@@ -21,7 +23,8 @@ const list = (name, fallback) => {
 };
 const widths = list("--widths", ["320", "1280"]).map(Number);
 const themes = list("--themes", ["dark", "light"]);
-const valueArgs = new Set(["--widths", "--themes"]);
+const valueArgs = new Set(["--widths", "--themes", "--settings"]);
+const settingsArg = args.includes("--settings") ? JSON.parse(args[args.indexOf("--settings") + 1]) : null;
 const paths = args.filter((a, i) => a.startsWith("/") && !valueArgs.has(args[i - 1]));
 const targets = paths.length
 	? paths
@@ -37,6 +40,7 @@ try {
 		for (const width of widths) {
 			const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, locale: "fi-FI", reducedMotion: "reduce" });
 			await context.addInitScript(fakeDevices, "prompt");
+			if (settingsArg) await context.addInitScript((s) => localStorage.setItem("nt.v1.settings", JSON.stringify(s)), settingsArg);
 			const page = await context.newPage();
 			for (const p of targets) {
 				await page.goto(server.base + p, { waitUntil: "networkidle" });

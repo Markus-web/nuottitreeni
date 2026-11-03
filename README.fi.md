@@ -10,10 +10,12 @@ Ilmainen verkkosovellus nuottien lukemisen ja soittamisen harjoitteluun pianolla
 
 ## Mitä sovellus tekee
 
-- **Oppitunnit nuottien lukemiseen.** Kymmenen lyhyttä oppituntia koskettimien nimistä G- ja F-avaimeen, apuviivoihin, ylennys- ja alennusmerkkeihin ja etumerkintään. Jokainen oppitunti selittää asian selkokielellä ja näyttää esimerkin, sitten harjoitellaan: yksi nuotti kerrallaan, nuottirivi tai korvalla. Kun vastaus menee väärin, sovellus kertoo miksi (mikä viiva tai väli ja mitä nuottiavain siitä tekee).
+- **Oppitunnit nuottien lukemiseen.** Kymmenen lyhyttä oppituntia koskettimien nimistä G- ja F-avaimeen, apuviivoihin, ylennys- ja alennusmerkkeihin ja etumerkintään. Jokainen oppitunti selittää asian selkokielellä ja näyttää esimerkin, sitten harjoitellaan: yksi nuotti kerrallaan, nuottirivi, korvalla tai nimeämällä nuotti painikkeista (soitinta ei tarvita). Kun vastaus menee väärin tai pyydät vihjeen, sovellus kertoo miksi (mikä viiva tai väli ja mitä nuottiavain siitä tekee).
+- **Vapaa harjoitus.** Valitse itse nuottiavain, nuottialue, etumerkintä ja ylennys- ja alennusmerkit, ja harjoittele juuri niitä nuotteja, joita tarvitset.
+- **Nuottien nimet haluamallasi tavalla.** Kirjaimet (C D E), suomalainen H-järjestelmä (C D E ... A H) tai do re mi.
 - **Rytmi.** Nuottiarvot, tauot ja tahtilajit ajastamattomina tehtävinä sekä rytmien soittaminen metronomin kanssa.
-- **Kappaleet.** Tekijänoikeuksista vapaita sävelmiä (Ukko Nooa, Tuiki tuiki tähtönen, Oodi ilolle, Menuetti G-duuri ja muita) soitettavaksi nuoteista. Sovellus odottaa oikeaa nuottia tai etenee valitsemassasi tempossa. Voit avata myös omia MusicXML-, MXL- tai MIDI-tiedostoja; ne eivät lähde selaimestasi.
-- **Oma soittimesi.** USB- ja Bluetooth-MIDI-soittimet Web MIDIn kautta. Bluetooth LE MIDI -soittimet ja osa vanhemmista USB-soittimista (esimerkiksi Yamahan mallit valmistajan omassa USB-tilassa) voi yhdistää suoraan Chromium-selaimissa (kokeellinen). Näytön koskettimet ja tietokoneen näppäimistö toimivat aina.
+- **Kappaleet.** Yksitoista tekijänoikeuksista vapaata sävelmää Ukko Noasta ja Tuiki tuiki tähtösestä Für Elisen teemaan ja Chopinin e-molli-preludin alkuun, soitettavaksi nuoteista. Sovellus odottaa oikeaa nuottia tai etenee valitsemassasi tempossa ja voi toistaa valittua kohtaa esilaskun kanssa. Nuotteihin saa nimet ja ehdotetun sormituksen, koskettimiston yläpuolelle putoavat nuotit, ja nuotit voi tulostaa. Voit avata myös omia MusicXML-, MXL- tai MIDI-tiedostoja; ne eivät lähde selaimestasi.
+- **Oma soittimesi.** USB- ja Bluetooth-MIDI-soittimet Web MIDIn kautta. Bluetooth LE MIDI -soittimet ja osa vanhemmista USB-soittimista (esimerkiksi Yamahan mallit valmistajan omassa USB-tilassa) voi yhdistää suoraan Chromium-selaimissa (kokeellinen). Näytön koskettimet ja tietokoneen näppäimistö toimivat aina, ja akustinen piano (tai oma äänesi) toimii mikrofonin kautta yksi nuotti kerrallaan; ääni käsitellään selaimessa eikä sitä tallenneta tai lähetetä.
 - **Ääni, tallenteet ja harjoituspäiväkirja.** Pianoääni selaimessa, automaattiset tallenteet soitostasi (ladattavissa MIDI-tiedostoina), minuutit päivittäin ja valinnainen päivätavoite.
 - **Toimii ilman verkkoa ja asennettavissa.** Ensimmäisen käynnin jälkeen sovellus toimii ilman verkkoyhteyttä, ja sen voi asentaa sovellukseksi.
 - **Saavutettava.** Tavoitteena WCAG 2.2 AAA: kontrasti 7:1, isot painikkeet, kaikki toimii näppäimistöllä, perusharjoituksissa ei aikarajoja ja nuoteille on tekstivastineet. Katso [ACCESSIBILITY.md](ACCESSIBILITY.md).
@@ -25,7 +27,7 @@ Ilmainen verkkosovellus nuottien lukemisen ja soittamisen harjoitteluun pianolla
 |---|---|---|
 | Chrome, Edge, Opera ja Brave Windowsissa, macOS:ssä, Linuxissa ja ChromeOS:ssä; Chrome Androidissa | Kyllä (Web MIDI) | Bluetooth LE MIDI ja USB-valmistajatila (kokeellinen) |
 | Firefox tietokoneella | Kyllä, kun sallit sivuston lupalisäosan | |
-| Safari macOS:ssä, iPhonessa ja iPadissa; Firefox Androidissa | Ei (selaimessa ei ole Web MIDIä) | Näytön koskettimet ja tietokoneen näppäimistö |
+| Safari macOS:ssä, iPhonessa ja iPadissa; Firefox Androidissa | Ei (selaimessa ei ole Web MIDIä) | Mikrofoni (akustinen piano tai laulu), näytön koskettimet ja tietokoneen näppäimistö |
 
 Laitekohtaiset ohjeet ja vianetsintä: [docs/devices.md](docs/devices.md) (englanniksi). Jos soittimesi ei toimi, [laiteraportti](https://github.com/Markus-web/nuottitreeni/issues/new?template=device-report.yml) auttaa.
 
@@ -41,6 +43,16 @@ Aseta ensimmäisen julkaisun jälkeen Workerin asetuksiin `OPERATOR_NAME` ja `OP
 
 Synkronointikoodi toimii vain siinä palvelussa, jossa se luotiin. Palvelusta toiseen siirrytään viemällä edistyminen tiedostoksi asetuksista ja tuomalla se toisessa palvelussa.
 
+### Muut palvelut ja oma tietokone
+
+Sivusto on staattisia tiedostoja ja valinnainen synkronointirajapinta. Ilman Cloudflarea kaikki toimii synkronointikoodeja lukuun ottamatta:
+
+- **Staattinen palvelu:** Netlify, Cloudflare Pages, GitHub Pages (verkkotunnuksen juuressa) tai mikä tahansa verkkopalvelin, joka jakaa `dist/`-kansion komennon `npm run build` jälkeen.
+- **Oma tietokone:** `npm run dev` (synkronoinnin kanssa, paikallinen tietokanta) tai `npm run build && npm run serve` (pelkkä Node).
+- **Docker:** `docker build -t nuottitreeni . && docker run --rm -p 127.0.0.1:8080:8080 nuottitreeni`.
+
+MIDI-soittimet ja mikrofoni vaativat osoitteen `localhost` tai HTTPS-yhteyden. Lisää: [docs/self-hosting.md](docs/self-hosting.md#other-hosts-without-sync-codes) (englanniksi).
+
 ### Käsin
 
 ```bash
@@ -54,7 +66,7 @@ npm run deploy                        # ajaa D1-migraatiot ja julkaisee
 
 ## Kehitys
 
-Tarvitset Node 22:n ja npm:n. Itse sovellus ei tarvitse muita työkaluja.
+Tarvitset Node 24:n ja npm:n (myös 22 ja 26 toimivat). Itse sovellus ei tarvitse muita työkaluja.
 
 ```bash
 npm ci

@@ -10,10 +10,12 @@ A free web app for learning to read sheet music and play it on a piano or keyboa
 
 ## What it does
 
-- **Lessons for reading notes.** Ten short lessons from the key names to the treble and bass clef, ledger lines, sharps and flats and key signatures. Each lesson explains the idea in plain words with a written-out example, then you practise: one note at a time, a row of notes, or by ear. When you miss, the app tells you why (which line or space, what the clef makes of it).
+- **Lessons for reading notes.** Ten short lessons from the key names to the treble and bass clef, ledger lines, sharps and flats and key signatures. Each lesson explains the idea in plain words with a written-out example, then you practise: one note at a time, a row of notes, by ear, or by naming the note from buttons (no instrument needed). When you miss, or ask for a hint, the app tells you why (which line or space, what the clef makes of it).
+- **Free practice.** Pick the clef, the note range, the key signature and whether sharps and flats appear, and drill exactly the notes you need.
+- **Note names your way.** Letters (C D E), the Finnish and German H system (C D E ... A H) or solfège (Do Re Mi).
 - **Rhythm.** Note values, rests and time signatures as untimed quizzes, and tapping rhythms with a metronome.
-- **Pieces.** Built-in public-domain melodies (Ukko Nooa, Twinkle Twinkle, Ode to Joy, Minuet in G and more) to play from the score. The app waits for the right note, or follows a tempo you choose. You can also open your own MusicXML, MXL or MIDI files; they never leave your browser.
-- **Your keyboard.** USB and Bluetooth MIDI keyboards through Web MIDI. Bluetooth LE MIDI and some older USB keyboards (for example Yamaha models in the maker's own USB mode) can be connected directly in Chromium browsers (experimental). The on-screen keyboard and your computer keyboard always work.
+- **Pieces.** Eleven built-in public-domain melodies, from Ukko Nooa and Twinkle Twinkle to the Für Elise theme and the opening of Chopin's Prelude in E minor, to play from the score. The app waits for the right note, or follows a tempo you choose, and can loop a passage with a count-in. Show note names and suggested fingering on the score, falling notes above the keyboard, or print the score. You can also open your own MusicXML, MXL or MIDI files; they never leave your browser.
+- **Your keyboard.** USB and Bluetooth MIDI keyboards through Web MIDI. Bluetooth LE MIDI and some older USB keyboards (for example Yamaha models in the maker's own USB mode) can be connected directly in Chromium browsers (experimental). The on-screen keyboard and your computer keyboard always work, and an acoustic piano (or your voice) works through the microphone, one note at a time; the sound is analysed in the browser and never recorded or sent.
 - **Sound, recordings and a practice log.** Piano sound in the browser, automatic recordings of what you play (download them as MIDI files), minutes per day and an optional daily goal.
 - **Offline and installable.** After the first visit the app works without a network and can be installed as an app.
 - **Accessible.** WCAG 2.2 AAA is the target: 7:1 contrast, large targets, full keyboard use, no time limits in the main exercises, text alternatives for the notation. See [ACCESSIBILITY.md](ACCESSIBILITY.md).
@@ -25,7 +27,7 @@ A free web app for learning to read sheet music and play it on a piano or keyboa
 |---|---|---|
 | Chrome, Edge, Opera, Brave on Windows, macOS, Linux and ChromeOS; Chrome on Android | Yes (Web MIDI) | Bluetooth LE MIDI and USB vendor mode (experimental) |
 | Firefox on a computer | Yes, after allowing a site permission add-on | |
-| Safari on macOS, iPhone and iPad; Firefox on Android | No (the browser has no Web MIDI) | On-screen and computer keyboard |
+| Safari on macOS, iPhone and iPad; Firefox on Android | No (the browser has no Web MIDI) | Microphone (acoustic piano or voice), on-screen and computer keyboard |
 
 Device notes and troubleshooting: [docs/devices.md](docs/devices.md). If your keyboard does not work, a [device report](https://github.com/Markus-web/nuottitreeni/issues/new?template=device-report.yml) helps.
 
@@ -41,6 +43,16 @@ After the first deploy, set `OPERATOR_NAME` and `OPERATOR_CONTACT` (shown on the
 
 Sync codes work only on the instance that created them. Moving between instances: export your progress in Settings and import it on the other site.
 
+### Other hosts and your own computer
+
+The site is static files plus an optional sync API. Without Cloudflare everything works except sync codes:
+
+- **Static hosting:** Netlify, Cloudflare Pages, GitHub Pages (at a domain root) or any web server, serving the `dist/` folder after `npm run build`.
+- **Your own computer:** `npm run dev` (with sync, local database) or `npm run build && npm run serve` (Node only).
+- **Docker:** `docker build -t nuottitreeni . && docker run --rm -p 127.0.0.1:8080:8080 nuottitreeni`.
+
+MIDI keyboards and the microphone need `localhost` or HTTPS. Details: [docs/self-hosting.md](docs/self-hosting.md#other-hosts-without-sync-codes).
+
 ### By hand
 
 ```bash
@@ -54,7 +66,7 @@ npm run deploy                        # applies the D1 migrations, then deploys
 
 ## Develop
 
-Node 22 and npm. No other tools are needed for the app itself.
+Node 24 and npm (22 and 26 work too). No other tools are needed for the app itself.
 
 ```bash
 npm ci

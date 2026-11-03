@@ -61,7 +61,7 @@ test("melody notation parses, beams eighths and becomes MusicXML", () => {
 	for (const p of PIECES) {
 		const xml = toMusicXml({ title: p.id, composer: p.composer, fifths: p.fifths, time: p.time, right: p.right });
 		assert.match(xml, /<score-partwise version="4.0">/);
-		const notes = (xml.match(/<note>/g) || []).length;
+		const notes = (xml.match(/<note>(?!<rest\/>)/g) || []).length;
 		assert.equal(notes, melodySteps(parseMelody(p.right)).reduce((a, s) => a + s.notes.length, 0), `${p.id} note count`);
 	}
 	assert.throws(() => parseMelody("C4x"), /bad token/);
