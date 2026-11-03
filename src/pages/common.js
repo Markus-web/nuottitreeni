@@ -78,7 +78,8 @@ function banner(ctx, children, { lang } = {}) {
 function setupTheme(ctx) {
 	const tools = $("[data-theme-tools]");
 	const select = $("#theme-select");
-	if (!tools || !select) return;
+	// The Settings page has its own theme choice; a second one in the footer would only confuse.
+	if (!tools || !select || ctx.cfg.page === "settings") return;
 	tools.hidden = false;
 	select.value = getSettings().theme;
 	select.addEventListener("change", () => {

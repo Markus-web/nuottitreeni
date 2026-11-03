@@ -12,7 +12,7 @@ For maintainers and AI agents before a release, or whenever you want to know whe
 | Browser flows and the WCAG 2.2 AAA matrix | `node tests/browser/run.mjs --only flows,aaa` | All `ok`. While fixing, `--grep <text>` runs only matching flows and pages |
 | SEO, Lighthouse, deploy-button template | `node tests/browser/run.mjs --only seo,lighthouse,template` | All `ok`, Lighthouse 100 in every category |
 | Dependencies | `npm audit` and `npm --prefix tests/browser audit` | 0 vulnerabilities; new versions at least 14 days old unless they fix an advisory ([release.md](release.md#dependency-updates)) |
-| Shell scripts | `npx shellcheck scripts/*.sh` (if any) | No warnings |
+| Shell scripts | `npx shellcheck scripts/*.sh` | No warnings |
 
 ## 2. Look at it
 

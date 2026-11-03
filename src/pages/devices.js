@@ -208,7 +208,7 @@ function renderStream() {
 	update();
 	streamBox.replaceChildren(
 		el("h2", { id: "stream-h", text: t("stream.title") }),
-		el("p", { text: t("stream.intro") }),
+		el("p", { text: t("devicesPage.streamIntro") }),
 		el("div", { className: "field" }, el("label", { for: "stream-bg", text: t("stream.background") }), bg),
 		el("label", { className: "check" }, names, t("devicesPage.streamNames")),
 		el("div", { className: "actions" }, link),

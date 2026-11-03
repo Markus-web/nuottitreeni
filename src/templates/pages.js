@@ -298,7 +298,8 @@ export function settingsPage(ctx) {
 
 export function piecesPage(ctx) {
 	const { t, site, loc, dict } = ctx;
-	const cards = PIECES.map((p) => {
+	// Easiest first: by level, in catalog order within a level (sort is stable).
+	const cards = [...PIECES].sort((a, b) => a.level - b.level).map((p) => {
 		const m = dict.piecesMeta[p.id];
 		const lessonTitle = dict.lessons[p.lesson]?.title ?? "";
 		return `<li class="card"><h2 class="card-title"><a href="${site.path("piece", loc, p.id)}">${esc(m.title)}</a></h2><p>${esc(m.description)}</p><p class="meta-line">${esc(t("pieces.level", { n: p.level }))}. ${esc(

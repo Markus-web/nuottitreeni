@@ -21,7 +21,7 @@ Every change runs the browser suite (`tests/browser/run.mjs`, see [docs/testing.
 | Keyboard use | Every control works with the keyboard. The on-screen piano is one tab stop; arrow keys move between keys, Enter or Space plays. Letter keys play notes only while the piano has focus |
 | Screen readers | Real headings and landmarks, status messages announced politely, names for every control, a text version of every built-in piece |
 | Time | No time limits in lessons, rhythm questions or the wait mode for pieces. Timed modes are optional and can be slowed down |
-| Motion | Nothing moves, blinks or plays by itself. The optional falling-notes view is off by default, moves only while a tempo run or Listen plays, and stops with the Stop button. Reduced motion is respected |
+| Motion | Nothing moves, blinks or plays by itself. The optional falling-notes view is off by default, moves only while a tempo run or Listen plays, and stops with the Stop button. With reduced motion turned on in the system, CSS transitions are off and the falling notes move in whole-beat steps instead of scrolling |
 | Understanding | Plain language, every music term explained in the lesson and the glossary, examples with note names written out |
 | Small screens and zoom | Works at 320 pixels wide and at 400 % zoom; the staff and the keyboard scroll inside their own box |
 
