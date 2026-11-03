@@ -45,3 +45,19 @@ test("output is deterministic and escapes text", () => {
 	assert.equal(a, renderStaff({ staff: "treble", items: [note("D4", "treble", { label: "<D>" })], label: 'Nuotti "D"' }));
 	assert.ok(a.includes("&lt;D&gt;") && a.includes("&quot;D&quot;"));
 });
+
+test("two-staff piece scores: bass notes keep their own value, bar numbers on each line", async () => {
+	const { PIECES } = await import("../../src/content/catalog.js");
+	const { systems } = await import("../../src/core/notation.js");
+	const ukko = PIECES.find((p) => p.id === "ukko-nooa");
+	const lines = systems(ukko.right, { left: ukko.left });
+	const first = lines[0].items.find((it) => it.type === "note");
+	assert.equal(first.notes.length, 2, "melody C4 and bass C3 in the first column");
+	assert.deepEqual(first.notes.map((n) => [n.clef, n.value]), [["treble", undefined], ["bass", "w"]]);
+	const svg = renderStaff({ staff: "grand", items: lines[1].items, barNumber: lines[1].firstBar, label: "Ukko Nooa" });
+	assert.match(svg, /class="st-barnum"[^>]*>5</, "the second line starts with bar 5");
+	// The bass whole note: an open head without a stem; the melody quarter keeps its filled head and stem.
+	const col = renderStaff({ staff: "grand", items: [first] });
+	assert.equal((col.match(/st-head st-open/g) ?? []).length, 1, "one open head (the bass whole note)");
+	assert.equal((col.match(/class="st-stem"/g) ?? []).length, 1, "one stem (the melody quarter)");
+});

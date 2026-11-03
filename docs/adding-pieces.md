@@ -21,11 +21,17 @@ Built-in pieces are short melodies written in a compact text notation and drawn 
    	lesson: "treble-c4-g4",        // the lesson that covers every note used
    	fifths: 0,                     // key signature: 1 = G major, -1 = F major
    	time: [4, 4],
+   	tempo: 100,                    // suggested tempo in beats per minute (the speed buttons use it)
    	right: "C4q C4q C4q E4q | D4q D4q D4q F4q | ...",
+   	left: "C3w | G2w | ...",       // optional bass line: a two-staff score and play-along
    },
    ```
 
    Optional fields: `pickup: true` when the piece starts with an upbeat (the first bar is shorter; it becomes the implicit bar 0 in MusicXML), `minor: true` for a minor key (the caption then says E minor instead of G major). Bar length comes from the time signature: `[3, 4]` holds three quarter notes, `[6, 8]` three as well (`barBeats` in `src/content/catalog.js`).
+
+   A bass line (`left`) follows four rules, checked by `tests/unit/content.test.mjs`: complete bars, no rests, every bass note starts together with a melody note (the score puts the bass under the melody note, and the steps of wait mode stay the melody's), and the range C2 to C4. Keep it simple: root notes in half and whole notes are enough for play-along, where the app plays one hand while the learner plays the other.
+
+   Every piece can be played in the keys with up to three sharps or flats (`src/core/transpose.js`). The test `tests/unit/transpose.test.mjs` moves every piece into every key and fails if a note would need a double sharp or flat, so a new piece is checked automatically.
 
    Notation (see the top of `src/core/notation.js`): `C4q` is C in octave 4 (middle C) as a quarter note; values `w`, `hd`, `h`, `qd`, `q`, `e`; `F#5e` and `Bb4h` for sharps and flats; `C4+E4+G4h` for a chord; `rq` for a rest; `|` between bars. Write the notes as they sound: the key signature is applied when drawing, so in G major write `F#4` and it is shown without a sharp.
 

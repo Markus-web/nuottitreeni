@@ -7,7 +7,7 @@
 // hashing (worker/rate-limit.js, rows kept 2 days), storage keys (src/core/store.js).
 // Change the text and the code together, and bump UPDATED.
 
-export const UPDATED = "2026-11-03";
+export const UPDATED = "2026-11-04";
 
 export default {
 	fi: {
@@ -33,6 +33,7 @@ export default {
 					p: ["Selaimessasi (laitteesi omassa tallennustilassa, localStorage ja IndexedDB):"],
 					list: [
 						"harjoitustilastot: oppitunnit, oikeat ja väärät vastaukset nuoteittain, vastausajat ja harjoitusminuutit päivittäin",
+						"kappaleiden viimeiset harjoituskerrat (aika, tapa, tempo, pisteet ja väärät nuotit); näitä ei synkronoida",
 						"asetukset, kuten kieli, teema, ääni ja MIDI-laitteiden asetukset",
 						"satunnainen laitetunnus, jolla eri laitteiden tilastot pidetään erillään synkronoinnissa",
 						"soitostasi tehdyt MIDI-tallenteet ja avaamasi nuottitiedostot",
@@ -127,6 +128,7 @@ export default {
 						"Mustat koskettimet ovat kapeampia kuin 44 pikseliä, koska pianon koskettimiston muoto on harjoituksen sisältöä. Ne ovat vähintään 24 pikseliä leveitä, ja jokaisen koskettimen voi valita myös nuolinäppäimillä.",
 						"Kapealla näytöllä koskettimisto ja nuottiviivasto vierivät omassa laatikossaan vaakasuunnassa.",
 						"Rytmin soittaminen ja kappaleiden tempotila ovat ajoitettuja harjoituksia. Tempoa voi hidastaa, ja samat asiat voi harjoitella ilman aikaa rytmitehtävissä ja kappaleiden odotustilassa.",
+						"Pikaluku on vapaaehtoinen ajastettu peli. Ensimmäiselle nuotille voi valita 6 sekuntia, Tauko pysäyttää ajan milloin tahansa, ja saman taidon voi harjoitella ilman aikaa oppitunneilla ja fraaseissa.",
 						"Musiikin termejä ei voi välttää. Jokainen termi selitetään oppitunnissa ja sanastossa, ja apuna ovat esimerkit.",
 						"Ruudunlukijalla tehtävää käsintestausta ei ole vielä tehty kaikilla laitteilla.",
 					],
@@ -165,6 +167,7 @@ export default {
 					p: ["In your browser (your device's own storage, localStorage and IndexedDB):"],
 					list: [
 						"practice statistics: lessons, right and wrong answers per note, answer times and practice minutes per day",
+						"the latest practice runs of each piece (time, mode, tempo, score and wrong notes); these are not synced",
 						"settings such as language, theme, sound and MIDI device settings",
 						"a random device id that keeps the statistics of different devices apart when syncing",
 						"MIDI recordings of your playing and the sheet music files you open",
@@ -251,6 +254,7 @@ export default {
 						"Black keys are narrower than 44 pixels because the shape of the piano keyboard is part of what is taught. They are at least 24 pixels wide, and every key can also be chosen with the arrow keys.",
 						"On narrow screens the keyboard and the staff scroll sideways inside their own box.",
 						"Playing rhythm and the tempo mode for pieces are timed exercises. The tempo can be slowed down, and the same things can be practised without timing in the rhythm questions and the wait mode for pieces.",
+						"Speed reading is an optional timed game. The first note can be given 6 seconds, Pause stops the time at any moment, and the same skill can be practised without timing in the lessons and the phrases.",
 						"Music terms cannot be avoided. Every term is explained in the lessons and the glossary, with examples.",
 						"Manual testing with screen readers has not yet been done on every device.",
 					],

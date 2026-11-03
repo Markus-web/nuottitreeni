@@ -72,8 +72,26 @@ export const DEFAULT_SETTINGS = {
 	scoreFingers: false,
 	fallingNotes: false,
 	nextNotes: true,
-	// Note colours (C red ... B violet) on keys, falling notes and name buttons; off by default.
-	noteColors: false,
+	// Colours on keys, falling notes and name buttons: "off", "names" (C red ... B violet),
+	// "hands" (right / left) or "fingers" (1-5). 1.2.0 stored true/false; see getSettings().
+	noteColors: "off",
+	// Names on the black keys too (on-screen and static keyboards).
+	namesOnBlackKeys: false,
+	// Piece page: labels in the falling notes ("none", "names", "fingers"), the other hand played
+	// by the app while one hand is practised, the chosen key per built-in piece ({ id: fifths }).
+	fallingLabels: "none",
+	playAlong: true,
+	pieceKeys: {},
+	// Keep the screen on while an exercise runs (Screen Wake Lock).
+	wakeLock: true,
+	// Key lights on the chosen MIDI output (lighted keyboards; experimental).
+	keyLights: { on: false, channel: 1 },
+	// Speed reading: last settings and best notes per minute per clef ({ treble: 32 }).
+	speed: null,
+	speedBest: {},
+	// Phrase training: last level and clef; note explorer: spelling of black keys.
+	phrases: null,
+	exploreSpelling: "sharp",
 	// "How to practise" boxes already seen (open on the first visit, closed after): mode keys.
 	seenHelp: [],
 	// Microphone input was on: restart it on the next page if permission is still granted.
@@ -82,8 +100,14 @@ export const DEFAULT_SETTINGS = {
 	freePractice: null,
 };
 
+const COLOR_MODES = ["off", "names", "hands", "fingers"];
+
 export function getSettings() {
-	return { ...DEFAULT_SETTINGS, ...getJson("settings", {}) };
+	const s = { ...DEFAULT_SETTINGS, ...getJson("settings", {}) };
+	// 1.2.0 stored the note colours as true or false.
+	if (s.noteColors === true) s.noteColors = "names";
+	if (!COLOR_MODES.includes(s.noteColors)) s.noteColors = "off";
+	return s;
 }
 
 export function saveSettings(patch) {
@@ -115,7 +139,8 @@ export function saveProgress(doc) {
 /** Per-MIDI-device settings, keyed by "name|manufacturer". */
 // keys: keyboard size (KEYBOARD_SIZES in keyboard-layout.js); null = not set (a known model's
 // size is used), 0 = unknown on purpose (no range warning).
-export const DEFAULT_DEVICE = { channel: 0, octave: 0, transpose: 0, curve: "linear", minVelocity: 1, split: 60, keys: null };
+// controlKeys: { toggle, restart } MIDI notes that control practice instead of playing (opt-in).
+export const DEFAULT_DEVICE = { channel: 0, octave: 0, transpose: 0, curve: "linear", minVelocity: 1, split: 60, keys: null, controlKeys: null };
 
 export function getDeviceSettings(key) {
 	return { ...DEFAULT_DEVICE, ...(getJson("devices", {})[key] ?? {}) };
@@ -135,6 +160,22 @@ export function getSyncState() {
 export function saveSyncState(state) {
 	setJson("sync", state);
 	dispatchEvent(new CustomEvent("nt-sync", { detail: state }));
+}
+
+// ---- piece history (only in this browser, never synced) ---------------------------------
+const RUNS_KEPT = 10;
+
+/** The last runs of a built-in piece, newest first: [{ at, mode, tempo, score, wrong }]. */
+export function getPieceRuns(id) {
+	const all = getJson("pieceRuns", {});
+	return Array.isArray(all[id]) ? all[id] : [];
+}
+
+export function addPieceRun(id, run) {
+	const all = getJson("pieceRuns", {});
+	all[id] = [run, ...(Array.isArray(all[id]) ? all[id] : [])].slice(0, RUNS_KEPT);
+	setJson("pieceRuns", all);
+	return all[id];
 }
 
 /** Remove everything this app stored in this browser. */

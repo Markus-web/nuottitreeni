@@ -39,3 +39,11 @@ test("note keys round-trip", () => {
 	assert.equal(parseNoteKey("H4"), null);
 	assert.deepEqual(whiteRange("C4", "G4").map((n) => noteKey(n.step, 0, n.octave)), ["C4", "D4", "E4", "F4", "G4"]);
 });
+
+test("played keys as staff notes (note explorer)", async () => {
+	const { describeNote } = await import("../../src/core/notes.js");
+	assert.deepEqual(describeNote(60), { step: "C", alter: 0, octave: 4, clef: "treble", written: null });
+	assert.deepEqual(describeNote(59), { step: "B", alter: 0, octave: 3, clef: "bass", written: null });
+	assert.deepEqual(describeNote(66), { step: "F", alter: 1, octave: 4, clef: "treble", written: 1 });
+	assert.deepEqual(describeNote(66, "flat"), { step: "G", alter: -1, octave: 4, clef: "treble", written: -1 });
+});

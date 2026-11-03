@@ -26,6 +26,7 @@ const ICONS = [
 	"code",
 	"cloud-arrow-down",
 	"copy",
+	"corners-out",
 	"download-simple",
 	"ear",
 	"gear",

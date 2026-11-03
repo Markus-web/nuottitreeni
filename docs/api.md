@@ -74,7 +74,7 @@ Per client and action, counted under a key made from the action and the first 32
 
 ## Progress v1
 
-Defined and validated in `src/core/progress.js` (`validateProgress`), used by both sides. Version 1.1.0 added the lesson id `free` (free practice) and the mode `name`; both are additions, so older data stays valid, but an instance must run 1.1.0 or later before it accepts progress that contains them. In short: `{ "v": 1, "devices": { "<deviceId>": { "updatedAt", "lessons", "rhythm", "pieces", "practice" } } }`, with at most 8 devices, 400 practice days, known lesson, rhythm and piece ids only, and 64 KiB in total. Unknown fields are rejected.
+Defined and validated in `src/core/progress.js` (`validateProgress`), used by both sides. Version 1.1.0 added the lesson id `free` (free practice) and the mode `name`; version 1.3.0 added the lesson ids `phrases-1` to `phrases-4` (phrase training, mode `row`). All are additions, so older data stays valid, but an instance must run the version that added an id before it accepts progress that contains it. In short: `{ "v": 1, "devices": { "<deviceId>": { "updatedAt", "lessons", "rhythm", "pieces", "practice" } } }`, with at most 8 devices, 400 practice days, known lesson, rhythm and piece ids only, and 64 KiB in total. Unknown fields are rejected.
 
 ## Retention
 

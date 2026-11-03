@@ -15,3 +15,4 @@ Short records of choices that shape the code, with the reasons, so they are not 
 | [0009](0009-piece-practice-aids.md) | Piece practice aids: names, fingering, falling notes |
 | [0010](0010-hosting-without-cloudflare.md) | Hosting without Cloudflare |
 | [0011](0011-stable-main.md) | Every change reaches `main` through a pull request that passed CI |
+| [0012](0012-features-from-other-trainers.md) | Features from sightread, Synthesia and Midiano: ideas only, written from scratch |

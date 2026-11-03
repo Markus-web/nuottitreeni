@@ -142,18 +142,37 @@ export class Sound {
 		osc.stop(when + 0.07);
 	}
 
-	/** Play a list of { midi, at (s from now), dur (s), vel } and return a stop function. */
+	/**
+	 * Play a list of { midi, at (s from now), dur (s), vel } and return a stop function. App
+	 * playback (Listen, the other hand) also goes to the chosen MIDI output through `midiOut`
+	 * (set by pages/common.js), so it sounds on the instrument; the player's own notes never do.
+	 */
 	sequence(notes) {
 		const ctx = this.unlock();
 		if (!ctx) return () => {};
 		const timers = [];
+		const sounding = new Set();
 		for (const n of notes) {
-			timers.push(setTimeout(() => this.play(n.midi, n.vel ?? 80), n.at * 1000));
-			timers.push(setTimeout(() => this.release(n.midi), (n.at + n.dur) * 1000));
+			timers.push(
+				setTimeout(() => {
+					this.play(n.midi, n.vel ?? 80);
+					this.midiOut?.(n.midi, true, n.vel ?? 80);
+					sounding.add(n.midi);
+				}, n.at * 1000),
+			);
+			timers.push(
+				setTimeout(() => {
+					this.release(n.midi);
+					this.midiOut?.(n.midi, false);
+					sounding.delete(n.midi);
+				}, (n.at + n.dur) * 1000),
+			);
 		}
 		return () => {
 			for (const t of timers) clearTimeout(t);
 			for (const n of notes) this.release(n.midi, 0.05);
+			for (const m of sounding) this.midiOut?.(m, false);
+			sounding.clear();
 		};
 	}
 }

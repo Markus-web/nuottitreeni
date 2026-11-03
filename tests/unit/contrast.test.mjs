@@ -12,7 +12,7 @@ function block(selectorRe) {
 	const m = selectorRe.exec(css);
 	assert.ok(m, `block ${selectorRe} not found`);
 	const body = css.slice(m.index + m[0].length, css.indexOf("}", m.index + m[0].length));
-	return Object.fromEntries([...body.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{6})\s*;/gi)].map(([, k, v]) => [k, v.toLowerCase()]));
+	return Object.fromEntries([...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{6})\s*;/gi)].map(([, k, v]) => [k, v.toLowerCase()]));
 }
 
 const dark = block(/^:root \{/m);
@@ -60,10 +60,10 @@ const PAIRS = [
 		[`c-${c}`, "surface", 7, `${c} section colour on cards`],
 		["bg", `c-${c}`, 7, `step number on the ${c} colour`],
 	]),
-	...["c", "d", "e", "f", "g", "a", "b"].flatMap((n) => [
-		[`n-${n}`, "key-white", 3, `note colour ${n.toUpperCase()} on a white key`],
-		[`n-${n}`, "bg", 3, `note colour ${n.toUpperCase()} on the page (falling notes)`],
-		[`n-${n}`, "surface", 3, `note colour ${n.toUpperCase()} on cards and buttons`],
+	...["c", "d", "e", "f", "g", "a", "b"].map((n) => `n-${n}`).concat(["hand-right", "hand-left", "f-1", "f-2", "f-3", "f-4", "f-5"]).flatMap((n) => [
+		[n, "key-white", 3, `colour ${n} on a white key`],
+		[n, "bg", 3, `colour ${n} on the page (falling notes)`],
+		[n, "surface", 3, `colour ${n} on cards and buttons`],
 	]),
 ];
 
@@ -88,4 +88,18 @@ for (const [name, tokens] of [
 test("light theme is the same for the theme switch and the system setting", () => {
 	assert.deepEqual(lightSystem, Object.fromEntries(Object.entries(lightAttr).filter(([k]) => k in lightSystem)));
 	for (const k of Object.keys(lightAttr)) assert.ok(k in lightSystem || lightAttr[k] === dark[k], `--${k} is set for [data-theme="light"] but not in the prefers-color-scheme block`);
+});
+
+test("text on drawn colours picks black or white, whichever reads better", async () => {
+	const { contrastRatio, inkOn } = await import("../../src/core/color.js");
+	assert.equal(inkOn("#ffffff"), "#000000");
+	assert.equal(inkOn("#111111"), "#ffffff");
+	assert.equal(inkOn("#4dcc84"), "#000000", "light green bars get black text");
+	assert.equal(inkOn("#1e74d6"), "#ffffff", "blue bars get white text");
+	// Every colour a falling-note bar can have gets its label at 4.5:1 or more.
+	const tokens = { ...dark, ...light };
+	for (const name of ["link", "n-c", "n-d", "n-e", "n-f", "n-g", "n-a", "n-b", "hand-right", "hand-left", "f-1", "f-2", "f-3", "f-4", "f-5"]) {
+		for (const bg of [dark[name], light[name] ?? tokens[name]]) assert.ok(contrastRatio(inkOn(bg), bg) >= 4.5, `label on --${name} ${bg}`);
+	}
+	assert.equal(ratio("#000000", "#ffffff").toFixed(1), contrastRatio("#000000", "#ffffff").toFixed(1), "same maths as this test");
 });

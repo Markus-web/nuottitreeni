@@ -1,14 +1,17 @@
 // Devices: connect MIDI (Web MIDI, Bluetooth, USB vendor mode) or the microphone, choose inputs and output,
-// per-device settings, Local Control and All Notes Off, a live MIDI monitor, latency, and a
+// per-device settings (keyboard size, control keys), key lights on the MIDI output, Local
+// Control and All Notes Off, a stream link builder, a live MIDI monitor, latency, and a
 // copyable device report for GitHub (device names and message types only).
 import { getDeviceSettings, getSettings, saveDeviceSettings, saveSettings } from "../core/store.js";
 import { midiLabel } from "../core/notes.js";
 import { KEYBOARD_SIZES, knownKeyboardSize } from "../core/keyboard-layout.js";
+import { KeyLights } from "../core/key-lights.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el, toggleMic } from "./common.js";
 
 const ctx = await boot();
 const { t, hub, noteNames } = ctx;
+const lights = new KeyLights(hub);
 const root = $("#app-root");
 
 const midiBox = el("section", { "aria-labelledby": "midi-h" });
@@ -97,8 +100,61 @@ function renderMidi() {
 		const panic = el("button", { type: "button", className: "btn", icon: icons.handPalm, text: t("devicesPage.allNotesOff") });
 		panic.addEventListener("click", () => hub.allNotesOff());
 		parts.push(el("div", { className: "actions" }, off, on, panic));
+		parts.push(renderKeyLights(settings));
 	}
 	midiBox.replaceChildren(...parts);
+}
+
+// Key lights (experimental): the next notes are sent to the chosen output on one channel.
+function renderKeyLights(settings) {
+	const k = settings.keyLights ?? { on: false, channel: 1 };
+	const on = el("input", { type: "checkbox", id: "key-lights" });
+	on.checked = k.on === true;
+	on.addEventListener("change", () => saveSettings({ keyLights: { ...getSettings().keyLights, on: on.checked } }));
+	const channel = select(
+		"key-lights-channel",
+		Array.from({ length: 16 }, (_, i) => [i + 1, String(i + 1)]),
+		k.channel ?? 1,
+		(v) => saveSettings({ keyLights: { ...getSettings().keyLights, channel: Number(v) } }),
+	);
+	const test = el("button", { type: "button", className: "btn", text: t("devicesPage.keyLightsTest") });
+	test.addEventListener("click", () => lights.test(60));
+	return el(
+		"fieldset",
+		{},
+		el("legend", { text: t("devicesPage.keyLightsHeading") }),
+		el("p", { className: "hint", text: t("devicesPage.keyLightsIntro") }),
+		el("label", { className: "check" }, on, t("devicesPage.keyLights")),
+		el("div", { className: "field" }, el("label", { for: "key-lights-channel", text: t("devicesPage.keyLightsChannel") }), channel),
+		el("div", { className: "actions" }, test),
+	);
+}
+
+// Control keys: two keys of the instrument start or stop practice and restart it.
+function controlKeys(i, id) {
+	const keys = getDeviceSettings(i.key).controlKeys;
+	const status = el("p", { role: "status", text: keys ? t("devicesPage.controlSet", { toggle: midiLabel(keys.toggle, noteNames), restart: midiLabel(keys.restart, noteNames) }) : t("devicesPage.controlNone") });
+	const teach = el("button", { type: "button", className: "btn", id: `${id}-teach`, text: t("devicesPage.controlTeach") });
+	const remove = el("button", { type: "button", className: "btn", icon: icons.trash, text: t("devicesPage.controlRemove"), hidden: !keys });
+	teach.addEventListener("click", () => {
+		status.textContent = t("devicesPage.controlPressToggle");
+		hub.learnNext(({ key, raw: toggle }) => {
+			if (key !== i.key) return void (status.textContent = t("devicesPage.controlOtherDevice"));
+			status.textContent = t("devicesPage.controlPressRestart");
+			hub.learnNext(({ key: k2, raw: restart }) => {
+				if (k2 !== i.key || restart === toggle) return void (status.textContent = t("devicesPage.controlOtherDevice"));
+				saveDeviceSettings(i.key, { controlKeys: { toggle, restart } });
+				renderDeviceSettings();
+				$(`#${id}-teach`)?.focus();
+			});
+		});
+	});
+	remove.addEventListener("click", () => {
+		saveDeviceSettings(i.key, { controlKeys: null });
+		renderDeviceSettings();
+		$(`#${id}-teach`)?.focus();
+	});
+	return el("fieldset", {}, el("legend", { text: t("devicesPage.controlHeading") }), el("p", { className: "hint", text: t("devicesPage.controlIntro") }), status, el("div", { className: "actions" }, teach, remove));
 }
 
 function renderDeviceSettings() {
@@ -138,6 +194,7 @@ function renderDeviceSettings() {
 				el("p", { className: "hint", text: t("devicesPage.keysHint") }),
 			),
 		);
+		fs.append(controlKeys(i, id("control")));
 		parts.push(fs);
 	});
 	settingsBox.replaceChildren(...parts);

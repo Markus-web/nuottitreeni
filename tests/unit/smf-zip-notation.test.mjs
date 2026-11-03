@@ -67,3 +67,18 @@ test("melody notation parses, beams eighths and becomes MusicXML", () => {
 	assert.throws(() => parseMelody("C4x"), /bad token/);
 	assert.throws(() => parseMelody("H4q"), /bad pitch/);
 });
+
+test("piece steps carry both hands and note lengths", async () => {
+	const { pieceSteps } = await import("../../src/core/notation.js");
+	const ukko = PIECES.find((p) => p.id === "ukko-nooa");
+	const steps = pieceSteps(ukko);
+	assert.deepEqual(steps[0].notes, [
+		{ midi: 60, hand: "right", dur: 1 },
+		{ midi: 48, hand: "left", dur: 4 },
+	]);
+	assert.deepEqual(steps[1].notes, [{ midi: 60, hand: "right", dur: 1 }], "the bass note is held, nothing new starts");
+	assert.equal(steps.filter((s) => s.notes.some((n) => n.hand === "left")).length, 15, "15 bass notes in Ukko Nooa");
+	const tuiki = PIECES.find((p) => p.id === "tuiki-tuiki");
+	assert.ok(pieceSteps(tuiki).every((s) => s.notes.every((n) => n.hand === "right")), "melody-only pieces have one hand");
+	assert.deepEqual(pieceSteps(tuiki).map((s) => s.iter), pieceSteps(tuiki).map((_, i) => i));
+});

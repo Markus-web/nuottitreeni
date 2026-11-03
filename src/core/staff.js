@@ -6,12 +6,14 @@
 //   keySig: { F: 1, C: 1, B: -1 } | null,
 //   timeSig: [4, 4] | null,
 //   items: [
-//     { type: "note", notes: [{ step, alter, octave, clef, written }], value: "w"|"h"|"hd"|"q"|"qd"|"e",
+//     { type: "note", notes: [{ step, alter, octave, clef, written, value? }], value: "w"|"h"|"hd"|"q"|"qd"|"e",
+//       (a note's own value wins for its staff: a bass whole note under melody quarters)
 //       label?, finger?: 1-5, state?: "current"|"ok"|"bad"|"done", beam?: "begin"|"end" },
 //     { type: "rest", value: "w"|"h"|"q"|"e", clef? },
 //     { type: "bar" } | { type: "final" }
 //   ],
 //   label?: accessible name (role="img"); omit for aria-hidden decoration,
+//   barNumber?: number shown above the first bar (decorative; the label says the bar),
 //   className?: extra CSS class
 // })
 //
@@ -74,7 +76,7 @@ function itemWidth(item) {
 }
 
 export function renderStaff(opts) {
-	const { staff, keySig = null, timeSig = null, items = [], label = null, className = "", scale = null } = opts;
+	const { staff, keySig = null, timeSig = null, items = [], label = null, className = "", scale = null, barNumber = null } = opts;
 	const clefs = staff === "grand" ? ["treble", "bass"] : [staff];
 	const bottomY = {};
 	clefs.forEach((clef, i) => {
@@ -124,6 +126,7 @@ export function renderStaff(opts) {
 	}
 	const top = bottomY[clefs[0]] - STAFF_SPAN;
 	const bottom = bottomY[lastClef];
+	if (barNumber != null) out.push(text(10, top - 14, String(barNumber), "st-barnum"));
 	if (staff === "grand") out.push(line(8, top, 8, bottom, "st-line"));
 	out.push(line(width - 8, top, width - 8, bottom, "st-line"));
 
@@ -181,12 +184,13 @@ function renderNote(out, item, cx, yOf, bottomY) {
 		ys.push({ y: yOf(clef, d), d, clef, n });
 	}
 	const clef0 = notes[0].clef;
-	const open = item.value === "w" || item.value === "h" || item.value === "hd";
 	// One stem per staff: a chord spanning both staffs of a grand staff gets two stems.
 	const groups = [...new Set(ys.map((v) => v.clef))].map((clef) => ys.filter((v) => v.clef === clef));
 	let stem = null;
 	let up = true;
 	for (const group of groups) {
+		const value = group[0].n.value ?? item.value;
+		const open = value === "w" || value === "h" || value === "hd";
 		const avg = group.reduce((a, v) => a + (v.d - BOTTOM_LINE[v.clef]), 0) / group.length;
 		up = avg < 4;
 		const sorted = [...group].sort((a, b) => a.y - b.y);
@@ -197,12 +201,12 @@ function renderNote(out, item, cx, yOf, bottomY) {
 			const hx = cx + shift;
 			parts.push(`<ellipse cx="${f(hx)}" cy="${f(v.y)}" rx="7.6" ry="5.4" transform="rotate(-20 ${f(hx)} ${f(v.y)})" class="${open ? "st-head st-open" : "st-head"}"/>`);
 			if (v.n.written != null) parts.push(text(cx - 30, v.y + 9, ACC[v.n.written], "st-acc"));
-			if (item.value === "hd" || item.value === "qd") {
+			if (value === "hd" || value === "qd") {
 				const onLine = (v.d - BOTTOM_LINE[v.clef]) % 2 === 0;
 				parts.push(`<circle cx="${f(cx + 14)}" cy="${f(v.y - (onLine ? HALF : 0))}" r="2.2" class="st-fill"/>`);
 			}
 		});
-		if (item.value === "w") continue;
+		if (value === "w") continue;
 		const headY = up ? sorted[sorted.length - 1].y : sorted[0].y;
 		const farY = up ? sorted[0].y : sorted[sorted.length - 1].y;
 		const sx = up ? cx + 7 : cx - 7;
@@ -211,7 +215,7 @@ function renderNote(out, item, cx, yOf, bottomY) {
 			stem = { x: sx, headY, tipY, up, beam: item.beam };
 		} else {
 			parts.push(line(sx, headY, sx, tipY, "st-stem"));
-			if (item.value === "e") {
+			if (value === "e") {
 				const dir = up ? 1 : -1;
 				parts.push(`<path d="M${f(sx)} ${f(tipY)} c 2 ${f(dir * 8)} 12 ${f(dir * 10)} 8 ${f(dir * 22)}" class="st-flag"/>`);
 			}

@@ -19,12 +19,12 @@ const NAV = [
 ];
 /** Footer groups: heading key, then [page key, label key]. */
 const FOOTER = [
-	["footer.practiceHeading", [["devices", "nav.devices"], ["freePractice", "free.title"], ["help", "nav.help"], ["glossary", "nav.glossary"]]],
+	["footer.practiceHeading", [["devices", "nav.devices"], ["freePractice", "free.title"], ["phrases", "phrases.title"], ["speed", "speed.title"], ["explore", "explore.title"], ["help", "nav.help"], ["glossary", "nav.glossary"]]],
 	["footer.siteHeading", [["about", "footer.about"], ["privacy", "footer.privacy"], ["accessibility", "footer.accessibility"], ["licenses", "footer.licenses"]]],
 ];
-const NAV_SECTION = { lesson: "home", rhythm: "home", practice: "home", freePractice: "home", rhythmPractice: "home", piece: "pieces", myPiece: "pieces" };
+const NAV_SECTION = { lesson: "home", rhythm: "home", practice: "home", freePractice: "home", phrases: "home", speed: "home", explore: "home", rhythmPractice: "home", piece: "pieces", myPiece: "pieces" };
 /** Section colour per page (body data-section, see main.css); pages not listed use the accent. */
-const COLOR_SECTION = { home: "lessons", lesson: "lessons", practice: "lessons", rhythm: "rhythm", rhythmPractice: "rhythm", pieces: "pieces", piece: "pieces", myPiece: "pieces", freePractice: "free" };
+const COLOR_SECTION = { home: "lessons", lesson: "lessons", practice: "lessons", rhythm: "rhythm", rhythmPractice: "rhythm", pieces: "pieces", piece: "pieces", myPiece: "pieces", freePractice: "free", phrases: "free", speed: "free", explore: "free" };
 
 function jsonScript(type, data, id) {
 	// "<" escaped so the JSON can never close the script element.
@@ -72,10 +72,9 @@ export function layout(ctx, page) {
 	head.push('<link rel="manifest" href="/manifest.webmanifest">');
 	for (const f of assets.preloadFonts) head.push(`<link rel="preload" href="${f}" as="font" type="font/woff2" crossorigin>`);
 	head.push(`<link rel="stylesheet" href="${assets.css}">`);
-	head.push(`<script src="${assets.themeJs}"></script>`);
 	const entry = assets.entries[page.entry];
-	for (const dep of entry.preload) head.push(`<link rel="modulepreload" href="${dep}">`);
-	head.push(`<link rel="modulepreload" href="${assets.localeChunks[loc]}">`);
+	// The theme script starts the page's module one frame after the first paint (theme-init.js).
+	head.push(`<script src="${assets.themeJs}" data-entry="${entry.file}" data-preload="${[...entry.preload, assets.localeChunks[loc]].join(" ")}"></script>`);
 	head.push(
 		jsonScript(
 			"application/json",
@@ -99,7 +98,6 @@ export function layout(ctx, page) {
 		),
 	);
 	for (const ld of page.jsonLd ?? []) head.push(jsonScript("application/ld+json", ld));
-	head.push(`<script type="module" src="${entry.file}"></script>`);
 
 	const section = NAV_SECTION[page.key] ?? page.key;
 	const navItems = NAV.map(([key, label, icon]) => {

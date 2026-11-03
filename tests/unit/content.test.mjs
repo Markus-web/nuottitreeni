@@ -3,9 +3,9 @@
 import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
 import { test } from "node:test";
-import { KEY_SIGS, PIECES, PITCH_LESSONS, RHYTHM_LESSONS, barBeats } from "../../src/content/catalog.js";
+import { CATALOG_IDS, KEY_SIGS, PIECES, PITCH_LESSONS, RHYTHM_LESSONS, barBeats, phraseLesson } from "../../src/content/catalog.js";
 import { BOTTOM_LINE } from "../../src/core/explain.js";
-import { bars, checkBars, parseMelody } from "../../src/core/notation.js";
+import { bars, checkBars, parseMelody, pieceSteps } from "../../src/core/notation.js";
 import { STEPS, hSystemName, letterName, midiOf } from "../../src/core/notes.js";
 
 // Every locale file is checked, so a new translation gets the same tests.
@@ -23,6 +23,29 @@ test("lesson ids are frozen (progress keys)", () => {
 	// Pieces may be added (any order), never renamed or removed.
 	const pieceIds = PIECES.map((p) => p.id);
 	for (const id of ["ukko-nooa", "tuiki-tuiki", "maijalla-oli-karitsa", "jaakko-kulta", "oodi-ilolle", "menuetti-g"]) assert.ok(pieceIds.includes(id), `piece ${id}`);
+	// Lesson ids in synced progress: the pitch lessons, free practice and the phrase levels.
+	for (const id of ["free", "phrases-1", "phrases-2", "phrases-3", "phrases-4"]) assert.ok(CATALOG_IDS.lessons.includes(id), id);
+	assert.equal(phraseLesson(2).id, "phrases-2");
+	assert.equal(phraseLesson(9).id, "phrases-1", "an unknown level falls back to level 1");
+});
+
+test("bass lines: complete bars, no rests, every bass note starts with a melody note, bass range", () => {
+	const withBass = PIECES.filter((p) => p.left);
+	assert.deepEqual(withBass.map((p) => p.id).sort(), ["maijalla-oli-karitsa", "oodi-ilolle", "ukko-nooa"]);
+	for (const p of withBass) {
+		const left = parseMelody(p.left);
+		assert.deepEqual(checkBars(left, barBeats(p.time), { pickup: p.pickup }), [], `${p.id}: bass bars`);
+		assert.equal(bars(left).length, bars(parseMelody(p.right)).length, `${p.id}: as many bass bars as melody bars`);
+		assert.ok(!left.some((it) => it.type === "rest"), `${p.id}: no rests in the bass`);
+		for (const it of left) if (it.type === "note") for (const n of it.notes) assert.ok(midiOf(n) >= 36 && midiOf(n) <= 60, `${p.id}: bass note ${n.step}${n.octave} between C2 and C4`);
+		const steps = pieceSteps(p);
+		const bassCount = left.filter((it) => it.type === "note").length;
+		assert.equal(steps.reduce((a, s) => a + s.notes.filter((n) => n.hand === "left").length, 0), bassCount, `${p.id}: every bass note joins a melody step`);
+	}
+});
+
+test("every piece has a suggested tempo", () => {
+	for (const p of PIECES) assert.ok(p.tempo >= 40 && p.tempo <= 160, `${p.id}: tempo ${p.tempo}`);
 });
 
 test("mnemonics in the texts match the staff model", () => {

@@ -59,6 +59,14 @@ const namesSelect = el("select", { id: "settings-note-names", "aria-describedby"
 for (const v of ["auto", "letters", "h-system", "solfege"]) namesSelect.append(el("option", { value: v, text: t(`settings.noteNamesOptions.${v}`) }));
 namesSelect.value = getSettings().noteNames;
 namesSelect.addEventListener("change", () => saveSettings({ noteNames: namesSelect.value }));
+const colorSelect = el("select", { id: "settings-colors", "aria-describedby": "note-colors-hint" });
+for (const v of ["off", "names", "hands", "fingers"]) colorSelect.append(el("option", { value: v, text: t(`settings.noteColorsOptions.${v}`) }));
+colorSelect.value = getSettings().noteColors;
+colorSelect.addEventListener("change", () => {
+	saveSettings({ noteColors: colorSelect.value });
+	if (colorSelect.value === "off") document.documentElement.removeAttribute("data-note-colors");
+	else document.documentElement.setAttribute("data-note-colors", colorSelect.value);
+});
 const langLinks = [...document.querySelectorAll("[data-lang-link]")].map((a) => el("li", {}, el("a", { className: "standalone", href: a.getAttribute("href"), lang: a.getAttribute("lang"), hreflang: a.getAttribute("hreflang"), text: a.textContent })));
 
 root.append(
@@ -75,8 +83,10 @@ root.append(
 		t("settings.displayHeading"),
 		check(t("keyboard.showNames"), "namesOnKeys"),
 		check(t("keyboard.showAll"), "showAllKeys"),
-		check(t("settings.noteColors"), "noteColors", (on) => document.documentElement.toggleAttribute("data-note-colors", on)),
-		el("p", { className: "hint", text: t("settings.noteColorsHint") }),
+		check(t("settings.namesOnBlackKeys"), "namesOnBlackKeys", (on) => document.documentElement.toggleAttribute("data-black-names", on)),
+		el("div", { className: "field" }, el("label", { for: "settings-colors", text: t("settings.noteColors") }), colorSelect),
+		el("p", { className: "hint", id: "note-colors-hint", text: t("settings.noteColorsHint") }),
+		check(t("settings.wakeLock"), "wakeLock"),
 		el("div", { className: "field" }, el("label", { for: "settings-theme", text: t("theme.label") }), themeSelect),
 		el("div", { className: "field" }, el("label", { for: "settings-note-names", text: t("settings.noteNames") }), namesSelect),
 		el("p", { className: "hint", id: "note-names-hint", text: t("settings.noteNamesHint") }),

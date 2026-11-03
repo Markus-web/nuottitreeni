@@ -15,11 +15,13 @@ test("CSP allows only this origin and never inline or eval code", () => {
 	assert.ok(!/unsafe-(inline|eval|hashes)|wasm-unsafe|https?:|\*/.test(CSP), CSP);
 });
 
-test("Permissions-Policy allows MIDI, USB and the microphone for this origin and nothing else sensitive", () => {
+test("Permissions-Policy allows MIDI, USB, the microphone, wake lock and full screen for this origin and nothing else sensitive", () => {
 	const features = Object.fromEntries(PERMISSIONS_POLICY.split(",").map((f) => f.trim().split("=")));
 	assert.equal(features.midi, "(self)");
 	assert.equal(features.usb, "(self)");
 	assert.equal(features.microphone, "(self)");
+	assert.equal(features["screen-wake-lock"], "(self)");
+	assert.equal(features.fullscreen, "(self)");
 	for (const off of ["camera", "geolocation", "payment", "serial", "hid"]) assert.equal(features[off], "()", off);
 });
 

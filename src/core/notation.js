@@ -77,6 +77,39 @@ export function melodySteps(items) {
 }
 
 /**
+ * Steps for wait and tempo mode from a built-in piece: [{ notes: [{ midi, hand, dur }], bar,
+ * beat, iter }], `dur` in beats. Bass notes (`left`) join the melody step that starts on the same
+ * beat; the catalog rule (tested) is that every bass note starts together with a melody note,
+ * so `iter` is also the index of the melody note in the score.
+ */
+export function pieceSteps(piece) {
+	const steps = [];
+	let beat = 0;
+	let bar = 1;
+	for (const it of parseMelody(piece.right)) {
+		if (it.type === "bar") bar++;
+		else {
+			if (it.type === "note") steps.push({ notes: it.notes.map((n) => ({ midi: midiOf(n), hand: "right", dur: it.beats })), bar, beat, iter: steps.length });
+			beat += it.beats;
+		}
+	}
+	if (piece.left) {
+		const at = new Map(steps.map((s) => [s.beat, s]));
+		let b = 0;
+		for (const it of parseMelody(piece.left)) {
+			if (it.type === "bar") continue;
+			if (it.type === "note") {
+				const s = at.get(b);
+				if (!s) throw new NotationError(`bass note at beat ${b} has no melody note`);
+				s.notes.push(...it.notes.map((n) => ({ midi: midiOf(n), hand: "left", dur: it.beats })));
+			}
+			b += it.beats;
+		}
+	}
+	return steps;
+}
+
+/**
  * Staff items for the own renderer; eighth pairs inside a beat get beams. `alters` is the key
  * signature ({ F: 1 }): notes that match it get no sign, notes that differ get one (natural too).
  */
@@ -152,22 +185,45 @@ export function toMusicXml(piece) {
 }
 
 /**
- * Split a melody into systems (lines) of `barsPerLine` bars for the own renderer.
+ * Split a melody into systems (lines) of `barsPerLine` bars for the own renderer. With `left`
+ * (a bass line) the items are for a grand staff: bass notes ride on the melody items.
  * Returns [{ items, firstStep }] where items are staff items with bar lines and firstStep is
  * the index (in melodySteps order) of the first note on that line.
  */
-export function systems(melody, { clef = "treble", alters = {}, barsPerLine = 4 } = {}) {
+/**
+ * Put the bass notes of one bar into the melody items that start on the same beat (two-staff
+ * score). A bass note keeps its own value, so a whole note can sit under four quarters.
+ */
+function addBass(items, bar, bassBar, alters) {
+	const at = new Map();
+	let b = 0;
+	for (const it of bassBar) {
+		if (it.type === "note") at.set(b, it);
+		b += it.beats;
+	}
+	let beat = 0;
+	bar.forEach((it, idx) => {
+		const bassNote = at.get(beat);
+		if (it.type === "note" && bassNote)
+			items[idx].notes.push(...bassNote.notes.map((n) => ({ ...n, clef: "bass", written: n.alter === (alters[n.step] ?? 0) ? null : n.alter, value: bassNote.value })));
+		beat += it.beats;
+	});
+}
+
+export function systems(melody, { clef = "treble", alters = {}, barsPerLine = 4, left = null } = {}) {
 	const all = bars(parseMelody(melody));
+	const bass = left ? bars(parseMelody(left)) : null;
 	const out = [];
 	let step = 0;
 	for (let i = 0; i < all.length; i += barsPerLine) {
 		const chunk = all.slice(i, i + barsPerLine);
-		const flat = [];
+		const items = [];
 		chunk.forEach((bar, k) => {
-			if (k) flat.push({ type: "bar" });
-			flat.push(...bar);
+			if (k) items.push({ type: "bar" });
+			const barItems = toStaffItems(bar, clef, alters);
+			if (bass) addBass(barItems, bar, bass[i + k] ?? [], alters);
+			items.push(...barItems);
 		});
-		const items = toStaffItems(flat, clef, alters);
 		items.push({ type: i + barsPerLine >= all.length ? "final" : "bar" });
 		out.push({ items, firstStep: step, firstBar: i + 1 });
 		step += chunk.flat().filter((it) => it.type === "note").length;

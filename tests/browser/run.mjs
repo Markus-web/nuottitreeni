@@ -4,7 +4,8 @@
 //
 // Usage: node tests/browser/run.mjs [--only flows,aaa,seo,lighthouse,template] [--no-build]
 //        [--grep text]   (only flows and AAA pages whose name contains the text)
-// AAA paths ending in #note-colors run with the note colours setting on.
+// AAA paths ending in a #hash run with settings on (SETTINGS_BY_HASH): note colours, finger
+// colours with falling-note labels, names on black keys.
 // Needs: npm ci --prefix tests/browser --ignore-scripts, and Chromium (CHROMIUM_PATH, default
 // /usr/bin/chromium). Reports and screenshots: tests/browser/artifacts/.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -24,6 +25,11 @@ const { chromium } = require("playwright-core");
 const args = process.argv.slice(2);
 const onlyArg = args.find((a) => a.startsWith("--only"));
 const only = onlyArg ? (onlyArg.includes("=") ? onlyArg.split("=")[1] : args[args.indexOf(onlyArg) + 1]).split(",") : ["flows", "aaa", "seo", "lighthouse", "template"];
+const SETTINGS_BY_HASH = {
+	"#note-colors": { noteColors: "names", fallingNotes: true },
+	"#finger-colors": { noteColors: "fingers", fallingNotes: true, fallingLabels: "fingers", scoreFingers: true },
+	"#black-names": { namesOnBlackKeys: true },
+};
 const grep = args.includes("--grep") ? args[args.indexOf("--grep") + 1] : "";
 const artifacts = join(ROOT, "tests/browser/artifacts");
 rmSync(artifacts, { recursive: true, force: true });
@@ -41,6 +47,7 @@ if (!args.includes("--no-build")) build();
 const server = await startServer();
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const contexts = [];
+const openPages = [];
 
 async function open(path, { mode = "prompt", theme = "dark", width = 1280, height = 900, locale = "fi-FI", settings = null, reduced = true } = {}) {
 	const context = await browser.newContext({ viewport: { width, height }, colorScheme: theme, locale, reducedMotion: reduced ? "reduce" : "no-preference", acceptDownloads: true });
@@ -48,6 +55,7 @@ async function open(path, { mode = "prompt", theme = "dark", width = 1280, heigh
 	await context.addInitScript(fakeDevices, mode);
 	if (settings) await context.addInitScript((s) => localStorage.setItem("nt.v1.settings", JSON.stringify(s)), settings);
 	const page = await context.newPage();
+	openPages.push(page);
 	page.errors = [];
 	page.on("console", (m) => m.type() === "error" && page.errors.push(m.text().slice(0, 200)));
 	page.on("pageerror", (e) => page.errors.push(`pageerror ${e.message.slice(0, 200)}`));
@@ -65,11 +73,14 @@ try {
 	if (only.includes("flows")) {
 		for (const [name, fn] of Object.entries(flows(open))) {
 			if (!name.includes(grep)) continue;
+			openPages.length = 0;
 			try {
 				await fn({ base: server.base });
 				record("flow", name, []);
 			} catch (e) {
-				record("flow", name, [String(e?.message || e).split("\n")[0]]);
+				// The page's console errors usually say why a flow timed out.
+				const errors = openPages.flatMap((p) => p.errors).slice(0, 3);
+				record("flow", name, [String(e?.message || e).split("\n")[0], ...errors.map((x) => `console ${x}`)]);
 			}
 			await closeContexts();
 		}
@@ -86,6 +97,11 @@ try {
 			"/harjoitus/?l=treble-c4-c5&m=name",
 			"/harjoitus/?l=treble-c4-c5&m=name#note-colors",
 			"/vapaa-harjoitus/",
+			"/fraasit/",
+			"/fraasit/?level=4",
+			"/pikaluku/",
+			"/tutki-nuotteja/",
+			"/tutki-nuotteja/#black-names",
 			"/vapaa-harjoitus/?c=grand&lo=F2&hi=G5&k=-2&a=1&m=name",
 			"/rytmiharjoitus/?l=rhythm-values",
 			"/rytmiharjoitus/?l=rhythm-play",
@@ -93,6 +109,8 @@ try {
 			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/`,
 			`/kappaleet/${fi.slugs.pieces["chopin-preludi"]}/`,
 			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/#note-colors`,
+			`/kappaleet/${fi.slugs.pieces["ukko-nooa"]}/#finger-colors`,
+			`/kappaleet/${fi.slugs.pieces["oodi-ilolle"]}/`,
 			"/paivakirja/",
 			"/laitteet/",
 			"/asetukset/",
@@ -104,7 +122,7 @@ try {
 			"/lisenssit/",
 			"/404.html",
 		];
-		const enPaths = ["/en/", `/en/lessons/${en.slugs.lessons["treble-c4-g4"]}/`, "/en/practice/?l=treble-c4-g4&m=single", "/en/free-practice/", "/en/settings/", "/en/pieces/", "/en/help/"];
+		const enPaths = ["/en/", `/en/lessons/${en.slugs.lessons["treble-c4-g4"]}/`, "/en/practice/?l=treble-c4-g4&m=single", "/en/free-practice/", "/en/phrases/", "/en/speed-reading/", "/en/explore-notes/", "/en/settings/", "/en/pieces/", "/en/help/"];
 		const combos = [
 			{ theme: "dark", width: 1280, deep: true },
 			{ theme: "light", width: 1280, deep: false },
@@ -113,7 +131,7 @@ try {
 		];
 		for (const path of [...fiPaths, ...enPaths].filter((p) => p.includes(grep))) {
 			for (const c of combos) {
-				const settings = path.endsWith("#note-colors") ? { noteColors: true, fallingNotes: true } : null;
+				const settings = SETTINGS_BY_HASH[path.slice(path.indexOf("#"))] ?? null;
 				const page = await open(path, { theme: c.theme, width: c.width, height: 800, locale: path.startsWith("/en/") ? "en-GB" : "fi-FI", mode: "prompt", settings });
 				if (path.includes("kappaleet/") && path.length > 12) await page.waitForSelector("#score svg", { timeout: 15000 }).catch(() => {});
 				const problems = [];
@@ -190,9 +208,20 @@ try {
 					const lcp = a["largest-contentful-paint"].numericValue;
 					const cls = a["cumulative-layout-shift"].numericValue;
 					const tbt = a["total-blocking-time"].numericValue;
-					if (lcp > 1800) problems.push(`LCP ${Math.round(lcp)} ms > 1800`);
+					if (lcp > 1800) {
+						problems.push(`LCP ${Math.round(lcp)} ms > 1800`);
+						// What the largest paint was, and where its time went, to fix it without guessing.
+						const el = a["largest-contentful-paint-element"]?.details?.items?.[0]?.items?.[0]?.node;
+						if (el) problems.push(`LCP element: ${el.selector} "${(el.snippet ?? "").slice(0, 80)}"`);
+						const phases = a["largest-contentful-paint-element"]?.details?.items?.[1]?.items;
+						if (phases) problems.push(`LCP phases: ${phases.map((ph) => `${ph.phase} ${Math.round(ph.timing)} ms`).join(", ")}`);
+						const blocking = a["render-blocking-resources"]?.details?.items ?? [];
+						if (blocking.length) problems.push(`render-blocking: ${blocking.map((b) => `${b.url.replace(server.base, "")} ${Math.round(b.wastedMs)} ms`).join(", ")}`);
+					}
 					if (cls > 0.02) problems.push(`CLS ${cls.toFixed(3)} > 0.02`);
 					if (tbt > 100) problems.push(`TBT ${Math.round(tbt)} ms > 100`);
+					// A failed page's full report is kept for a closer look (open it in the Lighthouse viewer).
+					if (problems.length) writeFileSync(join(artifacts, `lighthouse-${formFactor}-${p.replace(/[^a-z0-9]+/gi, "_")}.json`), JSON.stringify(r.lhr));
 					record("lighthouse", `${formFactor} ${p} ${JSON.stringify(scores)}`, problems, { scores, lcp, cls, tbt });
 				}
 			}

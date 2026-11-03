@@ -7,8 +7,8 @@ For maintainers and AI agents before a release, or whenever you want to know whe
 | What | Command | Passes when |
 |---|---|---|
 | Unit, Worker and content tests | `npm test` | All green. Includes music facts, locale parity, contrast, copy rules, unused translation keys, Markdown links and anchors, script headers |
-| Build and size budgets | `npm run build` | No budget error |
-| Everything CI runs | `npm run check` (in a fresh clone or `git worktree`, so local files cannot hide a problem) | Exit 0 |
+| Build and size budgets | `npm run build` | No budget error; the report names the largest page script (`maxPageJs`) |
+| Everything CI runs | `npm run check:fresh`: `npm audit` and `npm run check` in a fresh copy of the tracked and new files (`scripts/check-fresh.mjs`), so local files cannot hide a problem | Exit 0 |
 | Browser flows and the WCAG 2.2 AAA matrix | `node tests/browser/run.mjs --only flows,aaa` | All `ok`. While fixing, `--grep <text>` runs only matching flows and pages |
 | SEO, Lighthouse, deploy-button template | `node tests/browser/run.mjs --only seo,lighthouse,template` | All `ok`, Lighthouse 100 in every category |
 | Dependencies | `npm audit` and `npm --prefix tests/browser audit` | 0 vulnerabilities; new versions at least 14 days old unless they fix an advisory ([release.md](release.md#dependency-updates)) |
@@ -21,7 +21,8 @@ For maintainers and AI agents before a release, or whenever you want to know whe
 | Every page type, both themes, phone and desktop | `node tests/browser/shots.mjs --widths 320,1280` (full pages); `--top` or `--bottom` for the header or footer only | Clutter, unclear order, wrapping, overlap, doubled marks, text that is hard to read, anything that looks broken |
 | Note colours | `node tests/browser/shots.mjs --settings '{"noteColors":true,"fallingNotes":true}' /kappaleet/ukko-nooa/` | Bands on every white key, colours on the falling notes, names still visible |
 | A first visit | A private window: home, lesson 1, its practice | The "How to start" steps lead to a first exercise without guessing; the "How to practise" box is open the first time and closed the next |
-| Real devices | A MIDI keyboard (USB and Bluetooth), a phone, the microphone with an acoustic piano | Connect, play, unplug (the status says so), the range warning with the keyboard size set |
+| Real devices | A MIDI keyboard (USB and Bluetooth), a phone, a tablet, the microphone with an acoustic piano | Connect, play, unplug (the status says so), the range warning with the keyboard size set; control keys; play-along and Listen sounding through MIDI out; key lights on a lighted keyboard; the screen staying on during a piece; full screen |
+| Music | The bass lines and phrases by ear, a transposed piece on the instrument | They sound right; nothing needs double sharps or awkward ledger lines |
 
 ## 3. Read it
 
