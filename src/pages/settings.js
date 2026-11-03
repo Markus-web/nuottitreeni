@@ -75,6 +75,8 @@ root.append(
 		t("settings.displayHeading"),
 		check(t("keyboard.showNames"), "namesOnKeys"),
 		check(t("keyboard.showAll"), "showAllKeys"),
+		check(t("settings.noteColors"), "noteColors", (on) => document.documentElement.toggleAttribute("data-note-colors", on)),
+		el("p", { className: "hint", text: t("settings.noteColorsHint") }),
 		el("div", { className: "field" }, el("label", { for: "settings-theme", text: t("theme.label") }), themeSelect),
 		el("div", { className: "field" }, el("label", { for: "settings-note-names", text: t("settings.noteNames") }), namesSelect),
 		el("p", { className: "hint", id: "note-names-hint", text: t("settings.noteNamesHint") }),

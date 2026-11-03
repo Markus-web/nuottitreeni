@@ -15,9 +15,9 @@ The user-facing summary is [PRIVACY.md](../PRIVACY.md); the legal notice shown i
 
 | Key or store | Content | Module |
 |---|---|---|
-| `localStorage` `nt.v1.settings` | Settings (theme, sound, display, recorder, daily goal, auto sync, MIDI output, inputs turned off) | `src/core/store.js` |
+| `localStorage` `nt.v1.settings` | Settings (theme, sound, display incl. note names and note colours, recorder, daily goal, auto sync, MIDI output, inputs turned off, microphone on, the last free-practice choice, which "How to practise" boxes were already shown) | `src/core/store.js` |
 | `nt.v1.device` | Random device id (`[a-z0-9]{8,40}`) | `store.js`, `sync-code.js` |
-| `nt.v1.devices` | Per-keyboard settings keyed by "name\|manufacturer" | `store.js` |
+| `nt.v1.devices` | Per-keyboard settings keyed by "name\|manufacturer" (channel, octave, transpose, velocity, split point, keyboard size) | `store.js` |
 | `nt.v1.progress` | Progress v1 | `progress.js` |
 | `nt.v1.sync` | `{ code, rev, lastSyncAt }` | `sync.js` |
 | IndexedDB `nuottitreeni`, store `takes` | MIDI recordings (Standard MIDI File bytes, start time, length, note count) | `recorder.js`, `log.js` |

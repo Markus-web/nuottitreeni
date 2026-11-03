@@ -32,3 +32,8 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+    # Node majors are chosen on purpose (LTS lines only, odd majors are never LTS); see
+    # docs/release.md. Patch and minor updates of the image still come through.
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]

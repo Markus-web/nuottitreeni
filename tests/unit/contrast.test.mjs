@@ -55,6 +55,16 @@ const PAIRS = [
 	["key-wrong", "key-white", 3, "wrong key against other keys"],
 	["key-on", "key-white", 3, "pressed key against other keys"],
 	["focus-ink", "focus", 3, "the two focus rings against each other"],
+	...["lessons", "rhythm", "pieces", "free"].flatMap((c) => [
+		[`c-${c}`, "bg", 7, `${c} section colour (icons, edges, could carry text)`],
+		[`c-${c}`, "surface", 7, `${c} section colour on cards`],
+		["bg", `c-${c}`, 7, `step number on the ${c} colour`],
+	]),
+	...["c", "d", "e", "f", "g", "a", "b"].flatMap((n) => [
+		[`n-${n}`, "key-white", 3, `note colour ${n.toUpperCase()} on a white key`],
+		[`n-${n}`, "bg", 3, `note colour ${n.toUpperCase()} on the page (falling notes)`],
+		[`n-${n}`, "surface", 3, `note colour ${n.toUpperCase()} on cards and buttons`],
+	]),
 ];
 
 for (const [name, tokens] of [

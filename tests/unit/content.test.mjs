@@ -78,6 +78,21 @@ test("locales have the same keys and parallel lesson texts", () => {
 		for (const k of Object.keys(en.slugs.pages)) assert.ok(loc.slugs.pages[k], `${code} slugs.pages.${k}`);
 		assert.equal(loc.glossary.length, en.glossary.length, `${code} glossary length`);
 		assert.equal(loc.help.length, en.help.length, `${code} help length`);
+		for (const [k, steps] of Object.entries(en.howto).filter(([, v]) => Array.isArray(v))) assert.equal(loc.howto[k].length, steps.length, `${code} howto.${k} step count`);
+	}
+});
+
+test("every practice mode has its how-to steps, and worked examples are notes of the lesson", () => {
+	for (const k of ["single", "keys", "row", "ear", "name", "free", "quiz", "tap", "piece"]) assert.ok(Array.isArray(en.howto[k]) && en.howto[k].length >= 3, `howto.${k}`);
+	for (const l of PITCH_LESSONS) {
+		if (!l.staff) {
+			assert.equal(l.worked, undefined, `${l.id}: no staff, no worked example`);
+			continue;
+		}
+		assert.ok(l.worked, `${l.id} has a worked example`);
+		const sig = l.exampleKeySig ?? l.keySigs?.[0];
+		const same = (n) => n.step === l.worked.step && n.alter === l.worked.alter && n.octave === l.worked.octave && n.clef === l.worked.clef && n.written === l.worked.written;
+		assert.ok(l.pool(sig).some(same), `${l.id}: worked note ${l.worked.step}${l.worked.octave} is in the pool`);
 	}
 });
 

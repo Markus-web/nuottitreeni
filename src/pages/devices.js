@@ -3,6 +3,7 @@
 // copyable device report for GitHub (device names and message types only).
 import { getDeviceSettings, getSettings, saveDeviceSettings, saveSettings } from "../core/store.js";
 import { midiLabel } from "../core/notes.js";
+import { KEYBOARD_SIZES, knownKeyboardSize } from "../core/keyboard-layout.js";
 import * as icons from "../content/icons.js";
 import { $, boot, el, toggleMic } from "./common.js";
 
@@ -15,6 +16,7 @@ const micBox = el("section", { "aria-labelledby": "mic-h" });
 const micStatus = el("p", { role: "status" });
 const bleBox = el("section", { "aria-labelledby": "ble-h" });
 const usbBox = el("section", { "aria-labelledby": "usb-h" });
+const streamBox = el("section", { "aria-labelledby": "stream-h" });
 const settingsBox = el("section", { "aria-labelledby": "dev-settings-h" });
 const monitor = el("ul", { className: "monitor", "aria-label": t("devicesPage.monitorHeading") });
 const rangeLine = el("p", {});
@@ -30,6 +32,7 @@ root.append(
 	settingsBox,
 	bleBox,
 	usbBox,
+	streamBox,
 	el("section", { "aria-labelledby": "mon-h" }, el("h2", { id: "mon-h", text: t("devicesPage.monitorHeading") }), el("p", { text: t("devicesPage.monitorIntro") }), monitor, rangeLine),
 	el("section", { "aria-labelledby": "lat-h" }, el("h2", { id: "lat-h", text: t("devicesPage.latencyHeading") }), el("p", { text: t("devicesPage.latencyIntro") }), latencyLine),
 	el(
@@ -121,6 +124,19 @@ function renderDeviceSettings() {
 			),
 			el("div", { className: "field" }, el("label", { for: id("mv"), text: t("devicesPage.minVelocity") }), select(id("mv"), [1, 5, 10, 20, 30].map((n) => [n, String(n)]), s.minVelocity, save("minVelocity"))),
 			el("div", { className: "field" }, el("label", { for: id("sp"), text: t("devicesPage.split") }), select(id("sp"), [48, 53, 55, 57, 60, 62, 64, 65, 67].map((m) => [m, midiLabel(m, noteNames)]), s.split, save("split"))),
+			el(
+				"div",
+				{ className: "field" },
+				el("label", { for: id("keys"), text: t("devicesPage.keys") }),
+				select(
+					id("keys"),
+					// 0 = "I do not know" chosen on purpose (no warning, even for a known model); null = not set yet.
+					[[0, t("devicesPage.keysUnknown")], ...Object.entries(KEYBOARD_SIZES).map(([n, [lo, hi]]) => [n, t("devicesPage.keysOption", { n, low: midiLabel(lo, noteNames), high: midiLabel(hi, noteNames) })])],
+					s.keys ?? knownKeyboardSize(i.name) ?? 0,
+					save("keys"),
+				),
+				el("p", { className: "hint", text: t("devicesPage.keysHint") }),
+			),
 		);
 		parts.push(fs);
 	});
@@ -168,7 +184,7 @@ function renderMic() {
 	const parts = [el("h2", { id: "mic-h", text: t("devicesPage.micHeading") }), el("p", { text: t("devicesPage.micIntro") }), el("p", { text: t("devicesPage.micLimits") })];
 	if (!hub.mic.supported) parts.push(el("p", { className: "notice", text: t("devicesPage.micUnsupported") }));
 	else {
-		const b = el("button", { type: "button", className: "btn", icon: icons.microphone, text: hub.mic.active ? t("devicesPage.micStop") : t("devicesPage.micStart"), "aria-pressed": String(hub.mic.active) });
+		const b = el("button", { type: "button", id: "mic-toggle", className: "btn", icon: icons.microphone, text: hub.mic.active ? t("devicesPage.micStop") : t("devicesPage.micStart") });
 		b.addEventListener("click", () =>
 			toggleMic(ctx)
 				.then(() => (micStatus.textContent = hub.mic.active ? t("devicesPage.micListening") : ""))
@@ -178,6 +194,25 @@ function renderMic() {
 		parts.push(el("div", { className: "actions" }, b), micStatus);
 	}
 	micBox.replaceChildren(...parts);
+}
+
+// Builds the stream page link (?bg=&names=1), so nobody has to type URL options by hand.
+function renderStream() {
+	const link = el("a", { className: "btn", icon: icons.pianoKeys, text: t("devicesPage.streamOpen") });
+	const bg = select("stream-bg", [["green", t("stream.bgGreen")], ["black", t("stream.bgBlack")], ["transparent", t("stream.bgTransparent")]], "green", update);
+	const names = el("input", { type: "checkbox", id: "stream-names" });
+	names.addEventListener("change", update);
+	function update() {
+		link.href = `${ctx.paths.stream}?bg=${bg.value}${names.checked ? "&names=1" : ""}`;
+	}
+	update();
+	streamBox.replaceChildren(
+		el("h2", { id: "stream-h", text: t("stream.title") }),
+		el("p", { text: t("stream.intro") }),
+		el("div", { className: "field" }, el("label", { for: "stream-bg", text: t("stream.background") }), bg),
+		el("label", { className: "check" }, names, t("devicesPage.streamNames")),
+		el("div", { className: "actions" }, link),
+	);
 }
 
 function renderAll() {
@@ -213,4 +248,5 @@ copyBtn.addEventListener("click", async () => {
 	}
 });
 monitor.append(el("li", { text: t("devicesPage.monitorEmpty") }));
+renderStream();
 renderAll();

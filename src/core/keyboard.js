@@ -64,6 +64,7 @@ export class PianoKeyboard extends EventTarget {
 			}
 			el.className = `key ${k.black ? `key-black pos-${k.pos}` : "key-white"}`;
 			el.dataset.midi = String(k.midi);
+			if (!k.black) el.dataset.step = "C D EF G A B"[k.midi % 12]; // note colours (main.css)
 			const mark = document.createElement("span");
 			mark.className = "key-mark";
 			mark.setAttribute("aria-hidden", "true");
@@ -93,7 +94,7 @@ export class PianoKeyboard extends EventTarget {
 			const hint = document.createElement("p");
 			hint.className = "hint";
 			hint.id = hintId;
-			hint.textContent = this.t("keyboard.hint");
+			hint.textContent = `${this.t("keyboard.hint")} Z: ${this.t("keyboard.octaveDown")}. X: ${this.t("keyboard.octaveUp")}.`;
 			wrap.append(hint);
 			this.bind(kbd);
 		}

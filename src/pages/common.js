@@ -32,6 +32,24 @@ export function el(tag, props = {}, ...children) {
 	return node;
 }
 
+/**
+ * "How to practise" box: numbered steps and an optional worked example (HTML from
+ * core/worked-example.js). Open on the first visit to each kind of practice (key), closed
+ * after that; the user can always open it again.
+ */
+export function howTo(ctx, key, steps, exampleHtml = "") {
+	const seen = getSettings().seenHelp;
+	const first = !seen.includes(key);
+	const box = el("details", { className: "howto", open: first }, el("summary", { text: ctx.t("howto.title") }), el("ol", { className: "steps" }, ...steps.map((s) => el("li", { text: s }))));
+	if (exampleHtml) {
+		const ex = el("div", { className: "howto-example" }, el("p", {}, el("strong", { text: ctx.t("guide.example") })));
+		ex.insertAdjacentHTML("beforeend", exampleHtml);
+		box.append(ex);
+	}
+	if (first) saveSettings({ seenHelp: [...seen, key] });
+	return box;
+}
+
 /** Replace a control's icon and text in one step (toggles such as Play / Stop). */
 export function setLabel(node, icon, text) {
 	node.textContent = text;
@@ -70,41 +88,50 @@ function setupTheme(ctx) {
 	});
 }
 
+// Device row in the header: status text, one "Connect instrument" button and a Devices link.
+// The button connects MIDI where the browser has Web MIDI, otherwise it starts the microphone;
+// it hides once anything is connected. All other options are on the Devices page.
 function setupDeviceStatus(ctx) {
 	const { hub, t } = ctx;
 	const status = $("#device-status");
 	const button = $("#device-connect");
-	const mic = $("#mic-toggle");
+	const useMic = !hub.web.supported && hub.mic.supported;
+	// Both icons are in the page (no icon module on every page); data-mode picks the visible one.
+	if (button && useMic) {
+		button.dataset.mode = "mic";
+		button.querySelector("span").textContent = t("devicesPage.micStart");
+	}
+	let instruments = []; // names of the connected instruments (not the microphone), to notice an unplug
 	const render = ({ state, names }) => {
 		if (!status) return;
+		const now = hub.inputs().filter((i) => i.kind !== "mic").map((i) => i.name);
+		const gone = instruments.filter((n) => !now.includes(n));
+		instruments = now;
 		status.dataset.state = state === "connected" ? "on" : "off";
 		status.textContent =
-			state === "connected"
+			(gone.length ? `${t("device.removed", { name: gone.join(", ") })} ` : "") +
+			(state === "connected"
 				? names.length === 1
 					? t("device.statusConnected", { name: names[0] })
 					: t("device.statusMany", { n: names.length })
 				: state === "connecting"
 					? t("device.statusConnecting")
 					: state === "unsupported"
-						? t("device.unsupported")
+						? t("device.statusNoMidi")
 						: state === "denied"
 							? t("device.denied")
 							: state === "none-found"
 								? t("device.noDevices")
-								: t("device.statusNone");
-		if (button) button.hidden = !hub.web.supported || state === "connecting" || hub.web.inputs().some((i) => i.state === "connected");
-		if (mic) {
-			mic.hidden = !hub.mic.supported;
-			mic.setAttribute("aria-pressed", String(hub.mic.active));
-		}
+								: t("device.statusNone"));
+		if (button) button.hidden = !(hub.web.supported || hub.mic.supported) || state === "connecting" || hub.inputs().length > 0;
 	};
 	hub.addEventListener("status", (e) => render(e.detail));
 	render({ state: hub.state, names: [] });
 	button?.addEventListener("click", () => {
 		ctx.sound.unlock();
-		hub.connectMidi().catch(() => {});
+		if (useMic) toggleMic(ctx).catch(() => {});
+		else hub.connectMidi().catch(() => {});
 	});
-	mic?.addEventListener("click", () => toggleMic(ctx).catch(() => {}));
 	// The microphone was on on the previous page: restart it without asking again.
 	if (getSettings().micOn && hub.mic.supported) hub.mic.permission().then((p) => p === "granted" && hub.startMic(t("device.mic")).catch(() => {}));
 }
@@ -140,6 +167,7 @@ function registerWorker(ctx) {
 	navigator.serviceWorker
 		.register("/sw.js")
 		.then((reg) => {
+			offlineNote(reg);
 			const offerUpdate = (worker) => {
 				if (!worker || !navigator.serviceWorker.controller) return;
 				const btn = el("button", { type: "button", className: "btn btn-primary", text: t("common.updateNow") });
@@ -163,6 +191,26 @@ function registerWorker(ctx) {
 	navigator.serviceWorker.addEventListener("controllerchange", () => {
 		if (ctx.updateRequested) location.reload();
 	});
+}
+
+// Footer line once the service worker controls the page: everything needed is cached. The line
+// is in the page from the start (invisible, so nothing moves when it appears). Announced only
+// on the first install; on later pages it is plain text.
+function offlineNote(reg) {
+	const note = document.querySelector("[data-offline-note]");
+	if (!note) return;
+	const show = (announce) => {
+		note.classList.add("is-ready");
+		if (!announce) return;
+		const text = note.textContent;
+		note.setAttribute("role", "status");
+		note.textContent = "";
+		requestAnimationFrame(() => (note.textContent = text));
+	};
+	if (navigator.serviceWorker.controller) return show(false);
+	const w = reg.installing || reg.waiting || reg.active;
+	if (w?.state === "activated") return show(true);
+	w?.addEventListener("statechange", () => w.state === "activated" && show(true));
 }
 
 function setupLanguageHints() {

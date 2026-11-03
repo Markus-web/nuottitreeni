@@ -7,10 +7,13 @@
 // Tempo mode (optional): metronome with count-in; each note is judged against its beat.
 // View options (saved in settings): note names and suggested fingering on built-in scores,
 // falling notes above the keyboard, marks on the next keys; the score can be printed.
+// Range warning: when the connected keyboard's size is known (Devices page, or a known model),
+// notes the piece needs beyond its keys are named, with the octave shift as the fix.
 import { PIECES, altersFor } from "../content/catalog.js";
 import { FallingNotes } from "../core/falling.js";
 import { suggestFingers } from "../core/fingering.js";
 import { PianoKeyboard } from "../core/keyboard.js";
+import { knownKeyboardSize, playableRange } from "../core/keyboard-layout.js";
 import { melodySteps, parseMelody, systems } from "../core/notation.js";
 import { midiLabel, noteName, spellMidi } from "../core/notes.js";
 import { recordPiece } from "../core/progress.js";
@@ -18,9 +21,9 @@ import { cursorTo, createScore, extractSteps, loadScore, recolor, toBinaryString
 import { parseSmf, toSteps } from "../core/smf.js";
 import { Metronome } from "../core/sound.js";
 import { renderStaff } from "../core/staff.js";
-import { getDeviceId, getProgress, getSettings, idb, saveProgress, saveSettings } from "../core/store.js";
+import { getDeviceId, getDeviceSettings, getProgress, getSettings, idb, saveProgress, saveSettings } from "../core/store.js";
 import * as icons from "../content/icons.js";
-import { $, boot, el } from "./common.js";
+import { $, boot, el, howTo, setLabel } from "./common.js";
 
 const ctx = await boot();
 const { t, hub, sound, noteNames, cfg } = ctx;
@@ -170,8 +173,9 @@ function setup({ steps, show, redraw }) {
 		option("fallingNotes", t("piece.falling"), (on) => setFalling(on)),
 	);
 	const kbdBox = el("div");
+	const rangeNote = el("p", { className: "notice", hidden: true });
 	root.append(
-		...[el("h2", { id: "practice-h", text: t("piece.practice") }), modeSet, handSet].filter(Boolean),
+		...[el("h2", { id: "practice-h", text: t("piece.practice") }), howTo(ctx, "piece", ctx.dict.howto.piece), modeSet, handSet].filter(Boolean),
 		el("div", { className: "field" }, el("label", { for: "from-bar", text: t("piece.fromBar") }), fromInput),
 		el("div", { className: "field" }, el("label", { for: "to-bar", text: t("piece.toBar") }), toInput),
 		el("label", { className: "check" }, loop, t("piece.loop")),
@@ -180,8 +184,26 @@ function setup({ steps, show, redraw }) {
 		viewSet,
 		status,
 		feedback,
+		rangeNote,
 		kbdBox,
 	);
+	const needed = [...new Set(all)].sort((a, b) => a - b);
+	function checkRange() {
+		let found = null;
+		for (const i of hub.inputs()) {
+			if (i.kind === "mic") continue;
+			const d = getDeviceSettings(i.key);
+			const keys = d.keys ?? knownKeyboardSize(i.name);
+			if (!keys) continue;
+			const [lo, hi] = playableRange(keys, d.octave, d.transpose);
+			const missing = needed.filter((m) => m < lo || m > hi);
+			if (missing.length) found = { keys, lo, hi, missing };
+		}
+		rangeNote.hidden = !found;
+		if (found) rangeNote.textContent = t("piece.rangeWarning", { notes: found.missing.map((m) => midiLabel(m, noteNames)).join(", "), keys: found.keys, low: midiLabel(found.lo, noteNames), high: midiLabel(found.hi, noteNames) });
+	}
+	hub.addEventListener("status", checkRange);
+	checkRange();
 	const keyboard = new PianoKeyboard(kbdBox, { t, noteNames, low, high, id: "piece-kbd" });
 	keyboard.addEventListener("key", (e) => hub.screen(e.detail.midi, e.detail.on));
 
@@ -227,8 +249,11 @@ function setup({ steps, show, redraw }) {
 	let stopTempo = null;
 	let stopListen = null;
 	let run = 0; // increases on every stop, so a pending loop restart knows it was cancelled
+	// While practice runs, the start button restarts from the first chosen bar.
+	const running = (on) => setLabel(startBtn, on ? icons.arrowCounterClockwise : icons.play, on ? t("piece.restart") : t("piece.practice"));
 	function stopAll() {
 		run++;
+		running(false);
 		falling?.stop();
 		session = null;
 		stopTempo?.();
@@ -243,6 +268,7 @@ function setup({ steps, show, redraw }) {
 		session = { list, i: 0, pressed: new Set(), wrong: 0 };
 		falling?.setSteps(list);
 		feedback.replaceChildren();
+		running(true);
 		showStep(list, 0);
 		keyboard.setFocus(list[0].notes[0].midi, true);
 	}
@@ -275,8 +301,13 @@ function setup({ steps, show, redraw }) {
 		keyboard.clearMarks();
 		show(-1);
 		if (builtIn) saveProgress(recordPiece(getProgress(), getDeviceId(), { id: builtIn.id, wrong }, Date.now()));
-		if (loop.checked) setTimeout(startWait, 1200);
-		else session = null;
+		if (loop.checked) {
+			const thisRun = run;
+			setTimeout(() => run === thisRun && startWait(), 1200);
+		} else {
+			session = null;
+			running(false);
+		}
 	}
 
 	function timeline(list) {
@@ -296,6 +327,7 @@ function setup({ steps, show, redraw }) {
 		const listener = (e) => e.detail.on && hits.push({ midi: e.detail.midi, at: performance.now() });
 		hub.addEventListener("note", listener);
 		session = { tempo: true };
+		running(true);
 		const timers = [];
 		const totalBeats = Math.ceil(times[times.length - 1] / spb) + 2;
 		let t0 = null;
@@ -338,6 +370,7 @@ function setup({ steps, show, redraw }) {
 			session = null;
 			keyboard.clearMarks();
 			falling?.stop();
+			if (!loop.checked) running(false);
 			// Loop: start the same bars again after a short pause, with a new count-in.
 			if (loop.checked && run === thisRun) setTimeout(() => run === thisRun && startTempo(), 1500);
 		}

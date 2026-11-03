@@ -36,10 +36,11 @@ export function flows(open) {
 			await page.click("#device-connect");
 			await page.waitForFunction(() => document.getElementById("device-status")?.dataset.state === "off" && /esti|blocked/i.test(document.getElementById("device-status").textContent));
 		},
-		"midi: unsupported browser offers the on-screen keyboard": async () => {
+		"midi: unsupported browser offers the microphone instead": async () => {
 			const page = await open("/", { mode: "unsupported" });
 			await page.waitForFunction(() => /ei tue|does not support/i.test(document.getElementById("device-status")?.textContent || ""));
-			assert.equal(await page.locator("#device-connect").isHidden(), true);
+			assert.equal(await page.getAttribute("#device-connect", "data-mode"), "mic");
+			assert.match(await page.textContent("#device-connect"), /Käytä mikrofonia/);
 		},
 		"drill: a miss is explained, then a full round is saved": async () => {
 			const page = await open("/harjoitus/?l=treble-c4-g4&m=single", { mode: "granted" });
@@ -103,9 +104,9 @@ export function flows(open) {
 			await page.selectOption("#free-low", "C3");
 			await page.selectOption("#free-high", "C4");
 			await page.selectOption("#free-mode", "name");
-			await page.click("text=Aloita harjoitus");
+			await page.click("button:has-text('Aloita harjoitus')");
 			await page.waitForSelector("section.question[data-key]");
-			await page.click("text=Vihje");
+			await page.click("button:has-text('Vihje')");
 			await page.waitForFunction(() => /Vihje:/.test(document.querySelector(".feedback")?.textContent || ""));
 			await page.focus(".answers .answer");
 			for (let i = 1; i <= 20; i++) {
@@ -137,11 +138,13 @@ export function flows(open) {
 		},
 		"microphone: a played note is recognised (fake 440 Hz tone)": async () => {
 			const page = await open("/laitteet/", { mode: "unsupported" });
-			await page.click("text=Käytä mikrofonia");
+			await page.click("#mic-toggle");
 			await page.waitForFunction(() => /Mikrofoni kuuli nuotin A4/.test(document.querySelector("#mic-h")?.parentElement?.textContent || ""), null, { timeout: 8000 });
-			assert.equal(await page.getAttribute("#mic-toggle", "aria-pressed"), "true");
-			await page.click("text=Lopeta mikrofonin käyttö");
-			assert.equal(await page.getAttribute("#mic-toggle", "aria-pressed"), "false");
+			assert.match(await page.textContent("#mic-toggle"), /Lopeta mikrofonin käyttö/);
+			assert.equal(await page.locator("#device-connect").isHidden(), true, "the header button hides while the microphone is on");
+			await page.click("#mic-toggle");
+			assert.match(await page.textContent("#mic-toggle"), /Käytä mikrofonia/);
+			assert.equal(await page.locator("#device-connect").isHidden(), false);
 		},
 		"rhythm: quiz round and a tap round": async () => {
 			const page = await open("/rytmiharjoitus/?l=rhythm-values", { mode: "granted" });
@@ -304,6 +307,59 @@ export function flows(open) {
 				return img && img.complete && img.naturalWidth > 0;
 			}, null, { timeout: 10000 });
 			await page.context().setOffline(false);
+		},
+		"header: four tasks and one connect button; the rest is in the footer": async () => {
+			const page = await open("/", { mode: "prompt" });
+			assert.deepEqual(await page.locator(".main-nav a").allTextContents(), ["Oppitunnit", "Kappaleet", "Päiväkirja", "Asetukset"]);
+			assert.equal(await page.locator(".device-row button:visible").count(), 1, "one button in the device row");
+			for (const name of ["Laitteet", "Vapaa harjoitus", "Ohje", "Sanasto", "Tietoa", "Tietosuoja", "Saavutettavuus", "Lisenssit", "Lähdekoodi"]) assert.equal(await page.locator(".site-footer a", { hasText: name }).count(), 1, `footer: ${name}`);
+			await page.click("text=Aloita oppitunti 1");
+			await page.waitForURL(/koskettimien-nimet/);
+		},
+		"midi: unplugging the keyboard says so": async () => {
+			const page = await open("/", { mode: "granted" });
+			await page.waitForFunction(() => document.getElementById("device-status")?.dataset.state === "on");
+			await page.evaluate(() => window.__fakeMidi.unplug());
+			await page.waitForFunction(() => /Laite Fake Piano irrotettiin/.test(document.getElementById("device-status")?.textContent || ""));
+			assert.equal(await page.locator("#device-connect").isHidden(), false, "connect is offered again");
+		},
+		"devices: keyboard size gives a range warning on a piece": async () => {
+			const page = await open("/laitteet/", { mode: "granted" });
+			await page.waitForSelector("select[id$='-keys']");
+			await page.selectOption("select[id$='-keys']", "25");
+			await page.goto(page.url().replace(/\/laitteet\/.*/, `/kappaleet/${"fur-elise"}/`));
+			await page.waitForSelector("#score svg");
+			await page.waitForFunction(() => /25-koskettimiseen/.test(document.querySelector("#app-root .notice:not([hidden])")?.textContent || ""), null, { timeout: 5000 });
+		},
+		"devices: the stream link builder sets the options": async () => {
+			const page = await open("/laitteet/", { mode: "granted" });
+			await page.selectOption("#stream-bg", "black");
+			await page.check("#stream-names");
+			assert.match(await page.getAttribute("text=Avaa striiminäkymä", "href"), /\/striimi\/\?bg=black&names=1$/);
+		},
+		"practice: the how-to box is open on the first visit and closed after": async () => {
+			const page = await open("/harjoitus/?l=treble-c4-g4&m=single", { mode: "granted" });
+			await page.waitForSelector("details.howto");
+			assert.equal(await page.getAttribute("details.howto", "open"), "");
+			assert.match(await page.textContent("details.howto"), /Soita siis E\./);
+			await page.reload();
+			await page.waitForSelector("details.howto");
+			assert.equal(await page.getAttribute("details.howto", "open"), null);
+		},
+		"settings: note colours colour the keys": async () => {
+			const page = await open("/asetukset/", { mode: "granted" });
+			await page.check("text=Värit nuoteille");
+			await page.goto(page.url().replace(/\/asetukset\/.*/, "/harjoitus/?l=treble-c4-g4&m=single"));
+			await page.waitForSelector(".kbd .key-white[data-step='C']");
+			assert.match(await page.locator(".kbd .key-white[data-step='C']").first().evaluate((el) => getComputedStyle(el).boxShadow), /inset/);
+		},
+		"piece: the start button restarts while practice runs": async () => {
+			const page = await open(`/kappaleet/${"ukko-nooa"}/`, { mode: "granted" });
+			await page.waitForSelector("#score svg");
+			await page.click("text=Harjoittele >> nth=-1");
+			await page.waitForSelector("button:has-text('Aloita alusta')");
+			await page.click("text=Pysäytä");
+			await page.waitForSelector("button:has-text('Harjoittele')");
 		},
 		"stream: notes light up keys": async () => {
 			const page = await open("/striimi/?bg=black", { mode: "granted" });

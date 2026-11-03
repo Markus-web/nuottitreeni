@@ -28,7 +28,9 @@ export class FallingNotes {
 	colors() {
 		const cs = getComputedStyle(document.documentElement);
 		const v = (name) => cs.getPropertyValue(name).trim();
-		return { bg: v("--surface"), bar: v("--link"), edge: v("--text"), line: v("--rule") };
+		// Note colours setting: white-key notes take their letter's colour, black keys stay --link.
+		const notes = document.documentElement.hasAttribute("data-note-colors") ? [..."c d ef g a b"].map((s) => (s === " " ? null : v(`--n-${s}`))) : [];
+		return { bg: v("--surface"), bar: v("--link"), edge: v("--text"), line: v("--rule"), notes };
 	}
 
 	/** Draw the view with `beat` at the bottom edge. */
@@ -67,7 +69,7 @@ export class FallingNotes {
 			for (const n of s.notes) {
 				const box = this.keyboard.keyBox(n.midi);
 				if (!box) continue;
-				g.fillStyle = c.bar;
+				g.fillStyle = c.notes[n.midi % 12] || c.bar;
 				g.fillRect(box.x + 2, y0 + 1, box.w - 4, Math.max(2, y1 - y0 - 2));
 				g.strokeStyle = c.edge;
 				g.strokeRect(box.x + 2.5, y0 + 1.5, box.w - 5, Math.max(1, y1 - y0 - 3));

@@ -44,6 +44,22 @@
 	--key-wrong: #a12a1a;
 	--key-on: #0a4f8f;
 	--on-key-state: #ffffff;
+	/* Section colours (lessons, rhythm, pieces, free practice): card top edges, section icons,
+	   step numbers, the current-page underline. 7:1 on --bg and --surface in both themes. */
+	--c-lessons: #4dcc84;
+	--c-rhythm: #6db3ff;
+	--c-pieces: #f2b33d;
+	--c-free: #c39bff;
+	/* Note colours (optional setting, off by default): C red, D orange, E yellow, F green,
+	   G blue, A indigo, B violet. One set for both themes: 3:1 against the white keys and
+	   against the dark and light page. The names always stay, colour is only a help. */
+	--n-c: #e53935;
+	--n-d: #c45f00;
+	--n-e: #9e8000;
+	--n-f: #2e8b3e;
+	--n-g: #1e74d6;
+	--n-a: #5b5fd6;
+	--n-b: #a542c4;
 	--font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
 	--font-heading: "Space Grotesk", var(--font-body);
 	--font-music: "NT Music", "Noto Music", "Bravura", serif;
@@ -68,6 +84,10 @@
 	--key-white: #ffffff;
 	--key-black: #111111;
 	--key-border: #5c5c5c;
+	--c-lessons: #075a33;
+	--c-rhythm: #0d4f9e;
+	--c-pieces: #7a4500;
+	--c-free: #5e2ca5;
 }
 
 @media (prefers-color-scheme: light) {
@@ -85,6 +105,10 @@
 		--key-white: #ffffff;
 		--key-black: #111111;
 		--key-border: #5c5c5c;
+		--c-lessons: #075a33;
+		--c-rhythm: #0d4f9e;
+		--c-pieces: #7a4500;
+		--c-free: #5e2ca5;
 	}
 }
 
@@ -291,8 +315,32 @@ h2:focus {
 	border-bottom-color: var(--rule);
 }
 .main-nav a[aria-current="page"] {
-	border-bottom-color: var(--accent);
+	border-bottom-color: var(--section);
 	font-weight: 600;
+}
+/* Section colour: the layout sets data-section on body (lessons, rhythm, pieces, free); the
+   home page sets it per section. Other pages use the accent. */
+body {
+	--section: var(--accent);
+}
+[data-section="lessons"] {
+	--section: var(--c-lessons);
+}
+[data-section="rhythm"] {
+	--section: var(--c-rhythm);
+}
+[data-section="pieces"] {
+	--section: var(--c-pieces);
+}
+[data-section="free"] {
+	--section: var(--c-free);
+}
+.section-icon {
+	color: var(--section);
+}
+h2 .section-icon {
+	margin-right: 0.4em;
+	vertical-align: -0.1em;
 }
 /* The connect button appears after load; on narrow screens it may wrap under the status
    text, so two lines are reserved there and nothing below moves (CLS). */
@@ -319,10 +367,23 @@ h2:focus {
 .header-row .lang-link {
 	margin-left: auto;
 }
-#mic-toggle[aria-pressed="true"] {
-	border-color: var(--ok);
-	color: var(--ok);
-	font-weight: 600;
+@media (max-width: 48rem) {
+	.header-row .lang-link {
+		order: 2;
+	}
+	.main-nav {
+		order: 3;
+		flex-basis: 100%;
+	}
+}
+#device-connect[data-mode="midi"] .icon-mic,
+#device-connect[data-mode="mic"] .icon-midi {
+	display: none;
+}
+.device-more {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--target);
 }
 .device-status[data-state="on"] {
 	color: var(--ok);
@@ -506,6 +567,7 @@ summary {
 }
 .card {
 	border: 1px solid var(--rule);
+	border-top: 3px solid var(--section);
 	background: var(--surface);
 	padding: 1rem;
 	max-width: none;
@@ -543,6 +605,96 @@ summary {
 .meta-line {
 	color: var(--muted);
 	font-size: 0.95rem;
+}
+
+/* "How to start" on the home page: numbered steps with the number in the section colour. */
+.steps {
+	list-style: none;
+	counter-reset: step;
+	padding: 0;
+	margin: 0 0 1rem;
+	display: grid;
+	gap: 1rem;
+	max-width: var(--measure);
+}
+.steps > li {
+	counter-increment: step;
+	display: grid;
+	grid-template-columns: 2.25rem 1fr;
+	column-gap: 0.75rem;
+}
+.steps > li::before {
+	content: counter(step);
+	grid-row: span 3;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: 50%;
+	background: var(--section);
+	color: var(--bg);
+	font-weight: 700;
+	font-family: var(--font-heading);
+}
+.steps h3 {
+	margin: 0.25rem 0 0;
+	font-size: 1.1rem;
+}
+.steps p {
+	margin: 0.25rem 0 0;
+}
+
+/* "How to practise" box (pages/common.js howTo) and the worked example (core/worked-example.js) */
+.howto {
+	border: 1px solid var(--rule);
+	border-top: 3px solid var(--section);
+	background: var(--surface);
+	padding: 0 1rem;
+	margin: 1rem 0 1.5rem;
+	max-width: var(--measure);
+}
+.howto > summary {
+	min-height: var(--target);
+	display: flex;
+	align-items: center;
+	font-weight: 700;
+	cursor: pointer;
+}
+.howto[open] > summary {
+	margin-bottom: 0.5rem;
+}
+.howto .steps {
+	margin-bottom: 1rem;
+}
+.howto .steps > li {
+	align-items: center;
+}
+.howto .steps > li::before {
+	grid-row: auto;
+	width: 1.75rem;
+	height: 1.75rem;
+}
+.worked {
+	display: grid;
+	gap: 0.5rem 1.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+	align-items: start;
+	margin-bottom: 1rem;
+}
+.worked .figure {
+	margin: 0;
+}
+.worked .kbd {
+	--key-w: 2.25rem;
+	--key-bw: 1.35rem;
+}
+.worked-steps {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+.worked-steps li + li {
+	margin-top: 0.25rem;
 }
 
 /* Guide */
@@ -850,6 +1002,35 @@ summary {
 }
 .key:focus-visible {
 	z-index: 2;
+}
+/* Note colours (setting, off by default): a band at the foot of each white key and under each
+   name answer. The names stay, so colour is never the only cue (1.4.1). */
+[data-note-colors] .key-white[data-step] {
+	box-shadow: inset 0 -0.35rem 0 var(--note);
+}
+[data-note-colors] .answers .answer[data-step][data-alter="0"] {
+	border-bottom: 0.3rem solid var(--note);
+}
+[data-step="C"] {
+	--note: var(--n-c);
+}
+[data-step="D"] {
+	--note: var(--n-d);
+}
+[data-step="E"] {
+	--note: var(--n-e);
+}
+[data-step="F"] {
+	--note: var(--n-f);
+}
+[data-step="G"] {
+	--note: var(--n-g);
+}
+[data-step="A"] {
+	--note: var(--n-a);
+}
+[data-step="B"] {
+	--note: var(--n-b);
 }
 .kbd-options {
 	display: flex;
@@ -1217,6 +1398,16 @@ caption {
 	padding-block: 1rem 2rem;
 	color: var(--muted);
 }
+.footer-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 3rem;
+}
+.footer-heading {
+	font-size: inherit;
+	margin: 0.5rem 0 0;
+	color: var(--text);
+}
 .site-footer ul {
 	list-style: none;
 	display: flex;
@@ -1231,6 +1422,7 @@ caption {
 	align-items: center;
 	gap: 0.4em;
 	min-height: var(--target);
+	min-width: var(--target);
 }
 .site-footer p {
 	margin: 0.5rem 0;
@@ -1243,6 +1435,9 @@ caption {
 }
 .footer-tools label {
 	display: inline;
+}
+.footer-note:not(.is-ready) {
+	visibility: hidden;
 }
 
 /* Stream view */

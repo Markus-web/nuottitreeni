@@ -4,7 +4,7 @@
 // the right answer. Answers come from any input (MIDI, microphone, keys) or, in name mode,
 // from the note-name buttons.
 import { FREE_ID, KEY_SIGS, PITCH_LESSONS, ROUND_SIZE, ROW_LENGTH, UNLOCK_PCT, freeConfig, freeLesson, freeRangeKeys } from "../content/catalog.js";
-import { explainParts } from "../core/explain.js";
+import { explainText as explain, workedExample } from "../core/worked-example.js";
 import { PianoKeyboard } from "../core/keyboard.js";
 import { octaveRange } from "../core/keyboard-layout.js";
 import { midiLabel, midiOf, noteKey, noteName, parseNoteKey, pitchClass, spellMidi } from "../core/notes.js";
@@ -12,7 +12,7 @@ import { aggregate, recordRound } from "../core/progress.js";
 import { renderStaff } from "../core/staff.js";
 import { getDeviceId, getProgress, getSettings, saveProgress, saveSettings } from "../core/store.js";
 import * as icons from "../content/icons.js";
-import { $, boot, el, focusHeading, setLabel } from "./common.js";
+import { $, boot, el, focusHeading, howTo, setLabel } from "./common.js";
 
 const ctx = await boot();
 const { t, f, hub, sound, dict, noteNames } = ctx;
@@ -26,9 +26,7 @@ function nameOf(n) {
 }
 
 function explainText(target) {
-	return explainParts(target)
-		.map((p) => t(p.key, { ...p.vars, name: p.vars.step ? noteName(p.vars.step, p.vars.alter ?? 0, noteNames) : "" }))
-		.join(" ");
+	return explain(target, t, noteNames);
 }
 
 if (isFree) setupFree();
@@ -87,7 +85,7 @@ function setupFree() {
 		status,
 	);
 	const drillBox = el("div", { id: "free-drill" });
-	root.append(form, drillBox);
+	root.append(howTo(ctx, "free", dict.howto.free), form, drillBox);
 	startBtn.addEventListener("click", () => {
 		config = freeConfig({ clef: clefSel.value, low: lowSel.value, high: highSel.value, fifths: Number(keySel.value), accidentals: acc.checked, mode: modeSel.value });
 		if (lowSel.value !== config.low || highSel.value !== config.high) {
@@ -126,6 +124,11 @@ function start(lesson, mode, container) {
 	const back = free ? null : el("p", {}, el("a", { className: "standalone", href: ctx.paths.lesson[lesson.id], text: `${t("drill.backToGuide")}: ${tx.title}` }));
 	const notice = prev && (progress.lessons[prev.id]?.single?.best ?? 0) < UNLOCK_PCT ? el("p", { className: "notice", text: t("guide.notYet", { title: dict.lessons[prev.id].title }) }) : null;
 	const remember = tx.hint ? el("p", {}, el("strong", { text: t("guide.remember") }), " ", tx.hint) : null;
+	// Steps for this mode, with the lesson's worked example where the mode shows notation.
+	const helpKey = lesson.staff ? mode : mode === "single" ? "keys" : mode;
+	const sig = lesson.exampleKeySig ?? lesson.keySigs?.[0];
+	const example = lesson.worked && mode !== "ear" ? workedExample(lesson.worked, { t, noteNames, keySig: sig ? KEY_SIGS[sig].alters : null, verb: mode === "name" ? "choose" : "play" }) : "";
+	const guide = free ? null : howTo(ctx, helpKey, dict.howto[helpKey], example);
 	const drillHeading = free ? el("h2", { text: title }) : null;
 	const count = el("p", { className: "count" });
 	const keySigLine = el("p", { className: "muted" });
@@ -152,7 +155,7 @@ function start(lesson, mode, container) {
 		}),
 	);
 	const summary = el("section", { hidden: true, "aria-labelledby": "summary-h" });
-	container.replaceChildren(...[back, notice, remember, drillHeading, el("div", { className: "drill-head" }, count), question, kbdBox, options, summary].filter(Boolean));
+	container.replaceChildren(...[back, notice, guide, remember, drillHeading, el("div", { className: "drill-head" }, count), question, kbdBox, options, summary].filter(Boolean));
 
 	const keyboard = new PianoKeyboard(kbdBox, { t, noteNames, low: 48, high: 83, names: getSettings().namesOnKeys, id: "drill-kbd" });
 	function setRange() {

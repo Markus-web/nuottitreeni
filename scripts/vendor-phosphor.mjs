@@ -36,6 +36,7 @@ const ICONS = [
 	"lightbulb",
 	"link",
 	"link-break",
+	"metronome",
 	"microphone",
 	"music-note",
 	"music-notes",

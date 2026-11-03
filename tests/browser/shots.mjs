@@ -3,8 +3,10 @@
 // and saves full-page PNGs of the given paths at each width and theme.
 //
 // Usage: node tests/browser/shots.mjs [--no-build] [--widths 320,1280] [--themes dark,light]
-//        [--settings '{"fallingNotes":true}'] [path ...]
+//        [--settings '{"fallingNotes":true}'] [--top | --bottom] [--height 900] [path ...]
 // --settings: JSON merged into the app settings (nt.v1.settings) before every page loads.
+// --top / --bottom: only the first or last screenful (header or footer review), not the full page.
+// --height: viewport height in pixels (default 900). README image: --top --height 840 --widths 1280 --themes dark /en/
 // Default paths: /, /en/, a lesson, the pieces page, a piece, help, settings.
 // Output: tests/browser/artifacts/review/<path>-<theme>-<width>.png
 import { mkdirSync } from "node:fs";
@@ -23,7 +25,8 @@ const list = (name, fallback) => {
 };
 const widths = list("--widths", ["320", "1280"]).map(Number);
 const themes = list("--themes", ["dark", "light"]);
-const valueArgs = new Set(["--widths", "--themes", "--settings"]);
+const valueArgs = new Set(["--widths", "--themes", "--settings", "--height"]);
+const height = args.includes("--height") ? Number(args[args.indexOf("--height") + 1]) : 900;
 const settingsArg = args.includes("--settings") ? JSON.parse(args[args.indexOf("--settings") + 1]) : null;
 const paths = args.filter((a, i) => a.startsWith("/") && !valueArgs.has(args[i - 1]));
 const targets = paths.length
@@ -38,14 +41,15 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 try {
 	for (const theme of themes) {
 		for (const width of widths) {
-			const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, locale: "fi-FI", reducedMotion: "reduce" });
+			const context = await browser.newContext({ viewport: { width, height }, colorScheme: theme, locale: "fi-FI", reducedMotion: "reduce" });
 			await context.addInitScript(fakeDevices, "prompt");
 			if (settingsArg) await context.addInitScript((s) => localStorage.setItem("nt.v1.settings", JSON.stringify(s)), settingsArg);
 			const page = await context.newPage();
 			for (const p of targets) {
 				await page.goto(server.base + p, { waitUntil: "networkidle" });
 				const file = join(out, `${p.replace(/[^a-z0-9]+/gi, "_")}-${theme}-${width}.png`);
-				await page.screenshot({ path: file, fullPage: true });
+				if (args.includes("--bottom")) await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+				await page.screenshot({ path: file, fullPage: !args.includes("--top") && !args.includes("--bottom") });
 				console.log(file.slice(ROOT.length));
 			}
 			await context.close();
